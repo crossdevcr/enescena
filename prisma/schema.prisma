@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ARTIST
+  VENUE
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(ARTIST)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  artist Artist?
+  venue  Venue?
+}
+
+model Artist {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  name     String
+  slug     String   @unique
+  city     String?
+  genres   String[] // Postgres text[]
+  rate     Int?
+  imageUrl String?
+  bio      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // back-relation
+  bookings Booking[]
+}
+
+model Venue {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  name     String
+  slug     String  @unique
+  city     String?
+  address  String?
+  imageUrl String?
+  about    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // back-relation
+  bookings Booking[]
+}
+
+model Booking {
+  id       String        @id @default(cuid())
+  artistId String
+  venueId  String
+  date     DateTime
+  offer    Int?
+  status   BookingStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  artist Artist @relation(fields: [artistId], references: [id])
+  venue  Venue  @relation(fields: [venueId], references: [id])
+}
