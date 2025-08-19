@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Grid"; // Grid v2 in MUI v7
+import { formatPrice } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function ArtistsPage() {
 
                       {a.rate != null && (
                         <Typography variant="body2" color="text.secondary">
-                          From {a.rate} (unit TBD)
+                          From {formatPrice(a.rate)}
                         </Typography>
                       )}
                     </Stack>
