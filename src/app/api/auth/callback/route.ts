@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { cognito, verifyIdToken } from "@/lib/auth/cognito";
 import { setSessionOnResponse } from "@/lib/auth/cookies";
 import { prisma } from "@/lib/prisma";
-import { mapRoleFromClaimOrDefault } from "@/lib/auth/mapRole";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -16,6 +15,7 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${cognito.appUrl}/?auth_error=missing_code`);
   }
 
+  // Exchange code for tokens
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: cognito.clientId,
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${cognito.appUrl}/?auth_error=token_exchange_failed`);
   }
 
-  const tokens = await tokenRes.json() as {
+  const tokens = (await tokenRes.json()) as {
     id_token: string;
     access_token: string;
     refresh_token?: string;
@@ -41,23 +41,32 @@ export async function GET(req: Request) {
     expires_in?: number;
   };
 
-  // Verify and read claims
+  // Verify token and extract identity
   const payload = await verifyIdToken(tokens.id_token);
   const email = String(payload.email || "");
   const name = (payload["name"] as string | undefined) || email.split("@")[0];
-  const claimRole = (payload["custom:role"] as string | undefined) || null;
-  const role = mapRoleFromClaimOrDefault(claimRole);
 
   if (!email) {
     return NextResponse.redirect(`${cognito.appUrl}/?auth_error=missing_email_claim`);
   }
 
-  // Upsert user record
-  await prisma.user.upsert({
-    where: { email },
-    update: { name, role },
-    create: { email, name, role },
-  });
+  // Only assign default role on FIRST login; never change role on subsequent logins
+  const defaultRoleEnv = (process.env.DEFAULT_USER_ROLE || "ARTIST").toUpperCase();
+  const defaultRole =
+    defaultRoleEnv === "VENUE" || defaultRoleEnv === "ADMIN" ? defaultRoleEnv : "ARTIST";
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    // Update non-privileged fields only (do NOT touch role)
+    await prisma.user.update({
+      where: { email },
+      data: { name },
+    });
+  } else {
+    await prisma.user.create({
+      data: { email, name, role: defaultRole as any },
+    });
+  }
 
   const res = NextResponse.redirect(`${cognito.appUrl}/dashboard`);
   setSessionOnResponse(res, tokens);
