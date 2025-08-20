@@ -1,4 +1,5 @@
 import { type NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 const ID = "id_token";
 const ACCESS = "access_token";
@@ -17,14 +18,11 @@ export function setSessionOnResponse(
     id_token: string;
     access_token: string;
     refresh_token?: string;
-    // expires_in?: number; // optional
   }
 ) {
   res.cookies.set(ID, tokens.id_token, base);
   res.cookies.set(ACCESS, tokens.access_token, base);
-  if (tokens.refresh_token) {
-    res.cookies.set(REFRESH, tokens.refresh_token, base);
-  }
+  if (tokens.refresh_token) res.cookies.set(REFRESH, tokens.refresh_token, base);
   return res;
 }
 
@@ -35,8 +33,6 @@ export function clearSessionOnResponse(res: NextResponse) {
   return res;
 }
 
-// For server components/route handlers reading cookies (not in middleware)
-import { cookies } from "next/headers";
 export async function getTokens() {
   const jar = await cookies();
   return {

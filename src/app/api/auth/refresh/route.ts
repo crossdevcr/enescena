@@ -1,29 +1,46 @@
 import { NextResponse } from "next/server";
 import { cognito } from "@/lib/auth/cognito";
-import { getTokens, setSession, clearSession } from "@/lib/auth/cookies";
+import { setSessionOnResponse, clearSessionOnResponse } from "@/lib/auth/cookies";
 
-export async function POST() {
-  const { refreshToken } = await getTokens();
-  if (!refreshToken) return NextResponse.json({ ok: false, error: "no_refresh" }, { status: 401 });
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const returnTo = url.searchParams.get("returnTo") || `${cognito.appUrl}/dashboard`;
+
+  // Read refresh token from request cookies (available to route handlers)
+  const refreshToken = (url as any).cookies?.get?.("refresh_token")?.value; // not reliable
+  // More reliable: re-read from headers via NextResponse trick
+  // Simpler: ask the client to call POST; BUT we want GET + redirect UX.
+  // We'll fetch it via Request headers cookie string:
+  const cookieHeader = req.headers.get("cookie") || "";
+  const match = cookieHeader.match(/(?:^|;\s*)refresh_token=([^;]+)/);
+  const rt = match ? decodeURIComponent(match[1]) : null;
+
+  if (!rt) {
+    const res = NextResponse.redirect(new URL("/api/auth/login", req.url));
+    clearSessionOnResponse(res);
+    return res;
+  }
 
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     client_id: cognito.clientId,
-    refresh_token: refreshToken,
+    refresh_token: rt,
   });
 
-  const res = await fetch(cognito.tokenUrl, {
+  const resToken = await fetch(cognito.tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
 
-  if (!res.ok) {
-    clearSession();
-    return NextResponse.json({ ok: false, error: "refresh_failed" }, { status: 401 });
+  if (!resToken.ok) {
+    const res = NextResponse.redirect(new URL("/api/auth/login", req.url));
+    clearSessionOnResponse(res);
+    return res;
   }
 
-  const tokens = await res.json();
-  setSession(tokens);
-  return NextResponse.json({ ok: true });
+  const tokens = await resToken.json();
+  const res = NextResponse.redirect(returnTo);
+  setSessionOnResponse(res, tokens);
+  return res;
 }
