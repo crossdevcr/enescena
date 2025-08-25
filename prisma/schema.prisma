@@ -49,7 +49,6 @@ model Artist {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // back-relation
   bookings Booking[]
 }
 
@@ -68,21 +67,25 @@ model Venue {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // back-relation
   bookings Booking[]
 }
 
 model Booking {
-  id       String        @id @default(cuid())
-  artistId String
-  venueId  String
-  date     DateTime
-  offer    Int?
-  status   BookingStatus @default(PENDING)
+  id        String        @id @default(cuid())
+  artistId  String
+  venueId   String
+  eventDate DateTime // was `date`
+  hours     Int? // new (optional)
+  note      String? // new (optional)
+  status    BookingStatus @default(PENDING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   artist Artist @relation(fields: [artistId], references: [id])
   venue  Venue  @relation(fields: [venueId], references: [id])
+
+  @@index([artistId, createdAt])
+  @@index([venueId, createdAt])
+  @@index([status, createdAt])
 }
