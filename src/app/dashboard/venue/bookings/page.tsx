@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
   Alert, Box, Button, Chip, Container, Stack, Table, TableBody, TableCell,
-  TableHead, TableRow, Typography, Tabs, Tab
+  TableHead, TableRow, Typography
 } from "@mui/material";
 import Link from "next/link";
 import VenueBookingActions from "@/components/booking/VenueBookingActions";
+import StatusTabs from "@/components/common/StatusTabs";
+import { unstable_noStore as noStore } from "next/cache";
 
 function formatDateTimeCR(d: Date) {
   try {
@@ -36,24 +38,29 @@ function statusChip(status: string) {
 
 export const dynamic = "force-dynamic";
 
-const ALL_STATUSES = ["ALL", "PENDING", "ACCEPTED", "DECLINED", "CANCELLED", "COMPLETED"] as const;
-type StatusFilter = typeof ALL_STATUSES[number];
+const STATUSES = ["ALL", "PENDING", "ACCEPTED", "DECLINED", "CANCELLED", "COMPLETED"] as const;
+type Status = typeof STATUSES[number];
 
 export default async function VenueBookingsPage({
   searchParams,
 }: {
-  searchParams: { status?: string };
+  // 👇 Next 15: searchParams is a Promise
+  searchParams: Promise<{ status?: string }>;
 }) {
+  noStore();
+
+  const sp = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/api/auth/login");
   if (user.role !== "VENUE") redirect("/dashboard");
   if (!user.venue) redirect("/dashboard/venue/profile?reason=required");
 
-  const status = (searchParams?.status?.toUpperCase() as StatusFilter) || "ALL";
+  const status = (sp?.status?.toUpperCase() as Status) || "ALL";
+
   const where =
     status === "ALL"
       ? { venueId: user.venue!.id }
-      : { venueId: user.venue!.id, status: status };
+      : { venueId: user.venue!.id, status };
 
   const bookings = await prisma.booking.findMany({
     where,
@@ -69,26 +76,19 @@ export default async function VenueBookingsPage({
     },
   });
 
-  function tabHref(s: StatusFilter) {
-    return s === "ALL" ? "/dashboard/venue/bookings" : `/dashboard/venue/bookings?status=${s}`;
-  }
-
   return (
     <Container sx={{ py: 6 }}>
       <Stack spacing={2}>
         <Typography variant="h4" fontWeight={700}>My Bookings</Typography>
 
-        <Tabs value={ALL_STATUSES.indexOf(status)} aria-label="status filter tabs" sx={{ mb: 1 }}>
-          {ALL_STATUSES.map((s, i) => (
-            <Tab
-              key={s}
-              component={Link}
-              href={tabHref(s)}
-              label={s}
-              value={i}
-            />
-          ))}
-        </Tabs>
+        <StatusTabs
+          statuses={[...STATUSES]}
+          basePath="/dashboard/venue/bookings"
+          queryKey="status"
+          omitQueryForFirst
+        />
+
+        <Typography variant="body2" color="text.secondary">Showing: {status}</Typography>
 
         <Box>
           <Button component={Link} href="/artists" variant="outlined" size="small">
