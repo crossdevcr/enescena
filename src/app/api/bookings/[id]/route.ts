@@ -3,9 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { cookies } from "next/headers";
 
-// Allowed transitions (MVP): Artist can ACCEPT or DECLINE a PENDING booking
-const ALLOWED_ACTIONS = new Set(["ACCEPT", "DECLINE"] as const);
-type Action = "ACCEPT" | "DECLINE";
+type Action = "ACCEPT" | "DECLINE" | "CANCEL";
 
 export async function PATCH(
   req: Request,
@@ -26,37 +24,60 @@ export async function PATCH(
     where: { email },
     include: { artist: true, venue: true },
   });
-  if (!me || me.role !== "ARTIST" || !me.artist) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  // Load booking and ensure it belongs to this artist
+  // Booking
   const booking = await prisma.booking.findUnique({
     where: { id },
-    select: { id: true, status: true, artistId: true },
+    select: { id: true, status: true, artistId: true, venueId: true },
   });
   if (!booking) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  if (booking.artistId !== me.artist.id) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-  if (booking.status !== "PENDING") {
-    return NextResponse.json({ error: "invalid_state" }, { status: 400 });
-  }
 
   // Parse action
   const body = await req.json().catch(() => ({}));
   const action: Action | undefined = body?.action;
-  if (!action || !ALLOWED_ACTIONS.has(action)) {
+  if (!action || !["ACCEPT", "DECLINE", "CANCEL"].includes(action)) {
     return NextResponse.json({ error: "invalid_action" }, { status: 400 });
   }
 
-  const nextStatus = action === "ACCEPT" ? "ACCEPTED" : "DECLINED";
+  // Artist can ACCEPT/DECLINE when PENDING (and must own the artistId)
+  if (me.role === "ARTIST" && me.artist) {
+    if (booking.artistId !== me.artist.id) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+    if (booking.status !== "PENDING") {
+      return NextResponse.json({ error: "invalid_state" }, { status: 400 });
+    }
+    if (action === "ACCEPT" || action === "DECLINE") {
+      const nextStatus = action === "ACCEPT" ? "ACCEPTED" : "DECLINED";
+      const updated = await prisma.booking.update({
+        where: { id },
+        data: { status: nextStatus },
+        select: { id: true, status: true },
+      });
+      return NextResponse.json({ ok: true, booking: updated });
+    }
+    return NextResponse.json({ error: "invalid_action_for_role" }, { status: 400 });
+  }
 
-  const updated = await prisma.booking.update({
-    where: { id },
-    data: { status: nextStatus },
-    select: { id: true, status: true },
-  });
+  // Venue can CANCEL when PENDING (and must own the venueId)
+  if (me.role === "VENUE" && me.venue) {
+    if (booking.venueId !== me.venue.id) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+    if (booking.status !== "PENDING") {
+      return NextResponse.json({ error: "invalid_state" }, { status: 400 });
+    }
+    if (action === "CANCEL") {
+      const updated = await prisma.booking.update({
+        where: { id },
+        data: { status: "CANCELLED" },
+        select: { id: true, status: true },
+      });
+      return NextResponse.json({ ok: true, booking: updated });
+    }
+    return NextResponse.json({ error: "invalid_action_for_role" }, { status: 400 });
+  }
 
-  return NextResponse.json({ ok: true, booking: updated });
+  return NextResponse.json({ error: "forbidden" }, { status: 403 });
 }

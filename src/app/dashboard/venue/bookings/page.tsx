@@ -2,22 +2,12 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Container,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Typography,
+  Alert, Box, Button, Chip, Container, Stack, Table, TableBody, TableCell,
+  TableHead, TableRow, Typography, Tabs, Tab
 } from "@mui/material";
 import Link from "next/link";
+import VenueBookingActions from "@/components/booking/VenueBookingActions";
 
-// Format date/time for Costa Rica timezone (server-side safe)
 function formatDateTimeCR(d: Date) {
   try {
     return new Intl.DateTimeFormat("en-US", {
@@ -29,7 +19,6 @@ function formatDateTimeCR(d: Date) {
       minute: "2-digit",
     }).format(d);
   } catch {
-    // Fallback if timezone data unavailable
     return d.toISOString().slice(0, 16).replace("T", " ");
   }
 }
@@ -47,18 +36,27 @@ function statusChip(status: string) {
 
 export const dynamic = "force-dynamic";
 
-export default async function VenueBookingsPage() {
+const ALL_STATUSES = ["ALL", "PENDING", "ACCEPTED", "DECLINED", "CANCELLED", "COMPLETED"] as const;
+type StatusFilter = typeof ALL_STATUSES[number];
+
+export default async function VenueBookingsPage({
+  searchParams,
+}: {
+  searchParams: { status?: string };
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/api/auth/login");
   if (user.role !== "VENUE") redirect("/dashboard");
+  if (!user.venue) redirect("/dashboard/venue/profile?reason=required");
 
-  // If the venue profile doesn't exist yet, nudge them to create it
-  if (!user.venue) {
-    redirect("/dashboard/venue/profile?reason=required");
-  }
+  const status = (searchParams?.status?.toUpperCase() as StatusFilter) || "ALL";
+  const where =
+    status === "ALL"
+      ? { venueId: user.venue!.id }
+      : { venueId: user.venue!.id, status: status };
 
   const bookings = await prisma.booking.findMany({
-    where: { venueId: user.venue!.id },
+    where,
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -71,12 +69,26 @@ export default async function VenueBookingsPage() {
     },
   });
 
+  function tabHref(s: StatusFilter) {
+    return s === "ALL" ? "/dashboard/venue/bookings" : `/dashboard/venue/bookings?status=${s}`;
+  }
+
   return (
     <Container sx={{ py: 6 }}>
       <Stack spacing={2}>
-        <Typography variant="h4" fontWeight={700}>
-          My Bookings
-        </Typography>
+        <Typography variant="h4" fontWeight={700}>My Bookings</Typography>
+
+        <Tabs value={ALL_STATUSES.indexOf(status)} aria-label="status filter tabs" sx={{ mb: 1 }}>
+          {ALL_STATUSES.map((s, i) => (
+            <Tab
+              key={s}
+              component={Link}
+              href={tabHref(s)}
+              label={s}
+              value={i}
+            />
+          ))}
+        </Tabs>
 
         <Box>
           <Button component={Link} href="/artists" variant="outlined" size="small">
@@ -86,7 +98,9 @@ export default async function VenueBookingsPage() {
 
         {bookings.length === 0 ? (
           <Alert severity="info">
-            You don’t have any bookings yet. Browse artists and send a booking request.
+            {status === "ALL"
+              ? "You don’t have any bookings yet. Browse artists and send a booking request."
+              : `No bookings with status ${status}.`}
           </Alert>
         ) : (
           <Table size="small" sx={{ background: "background.paper", borderRadius: 2 }}>
@@ -111,12 +125,20 @@ export default async function VenueBookingsPage() {
                   </TableCell>
                   <TableCell>{statusChip(b.status)}</TableCell>
                   <TableCell align="right">
+                    {b.status === "PENDING" ? (
+                      <VenueBookingActions bookingId={b.id} />
+                    ) : (
+                      <Button size="small" disabled variant="text">
+                        {b.status}
+                      </Button>
+                    )}
                     {b.artist?.slug && (
                       <Button
                         component={Link}
                         href={`/artists/${b.artist.slug}`}
                         variant="text"
                         size="small"
+                        sx={{ ml: 1 }}
                       >
                         View artist
                       </Button>
