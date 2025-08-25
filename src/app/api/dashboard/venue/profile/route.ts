@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/text";
+import { slugify, ensureUniqueVenueSlug } from "@/lib/text";
 
 export async function POST(req: Request) {
   const cookieHeader = req.headers.get("cookie") || "";
@@ -17,25 +17,30 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const name = (body.name ?? "").toString().trim();
-  if (!name) return NextResponse.json({ error: "name_required" }, { status: 400 });
+  if (!name || name.length < 2) {
+    return NextResponse.json({ error: "name_required" }, { status: 400 });
+  }
 
   const city = (body.city ?? "").toString().trim() || null;
   const address = (body.address ?? "").toString().trim() || null;
   const about = (body.about ?? "").toString().trim() || null;
 
-  const data = {
-    userId: user.id,
-    name,
-    slug: slugify(name),
-    city,
-    address,
-    about,
-  };
-
   const existing = await prisma.venue.findUnique({ where: { userId: user.id } });
-  const venue = existing
-    ? await prisma.venue.update({ where: { userId: user.id }, data })
-    : await prisma.venue.create({ data });
 
+  if (existing) {
+    // Keep slug stable on updates
+    const venue = await prisma.venue.update({
+      where: { userId: user.id },
+      data: { name, city, address, about },
+    });
+    return NextResponse.json({ ok: true, venue });
+  }
+
+  // Create with unique slug
+  const base = slugify(name);
+  const unique = await ensureUniqueVenueSlug(base, prisma);
+  const venue = await prisma.venue.create({
+    data: { userId: user.id, name, slug: unique, city, address, about },
+  });
   return NextResponse.json({ ok: true, venue });
 }

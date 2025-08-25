@@ -13,3 +13,19 @@ export function parseGenres(input: string) {
     .map((g) => g.trim())
     .filter(Boolean);
 }
+
+export async function ensureUniqueArtistSlug(base: string, prisma: any) {
+  let slug = base, i = 1;
+  while (await prisma.artist.findUnique({ where: { slug } })) {
+    slug = `${base}-${++i}`;
+  }
+  return slug;
+}
+
+export async function ensureUniqueVenueSlug(base: string, prisma: any) {
+  let slug = base, i = 1;
+  while (await prisma.venue.findUnique({ where: { slug } })) {
+    slug = `${base}-${++i}`;
+  }
+  return slug;
+}

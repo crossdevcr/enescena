@@ -12,6 +12,9 @@ const base = {
   path: "/",
 };
 
+const short = { ...base, maxAge: 60 * 10 };
+const long  = { ...base, maxAge: 60 * 60 * 24 * 30 };
+
 export function setSessionOnResponse(
   res: NextResponse,
   tokens: {
@@ -20,9 +23,14 @@ export function setSessionOnResponse(
     refresh_token?: string;
   }
 ) {
-  res.cookies.set(ID, tokens.id_token, base);
-  res.cookies.set(ACCESS, tokens.access_token, base);
-  if (tokens.refresh_token) res.cookies.set(REFRESH, tokens.refresh_token, base);
+  // Short-lived auth tokens
+  res.cookies.set(ID, tokens.id_token, short);
+  res.cookies.set(ACCESS, tokens.access_token, short);
+
+  // Longer-lived refresh token (if Cognito returned one on this flow)
+  if (tokens.refresh_token) {
+    res.cookies.set(REFRESH, tokens.refresh_token, long);
+  }
   return res;
 }
 
@@ -33,6 +41,7 @@ export function clearSessionOnResponse(res: NextResponse) {
   return res;
 }
 
+// For Server Components / route handlers (NOT middleware)
 export async function getTokens() {
   const jar = await cookies();
   return {
