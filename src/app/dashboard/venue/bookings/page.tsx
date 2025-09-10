@@ -169,12 +169,8 @@ export default async function VenueBookingsPage({
                     </TableCell>
                     <TableCell>{statusChip(b.status)}</TableCell>
                     <TableCell align="right">
-                      {b.status === "PENDING" ? (
+                      {b.status === "PENDING" && (
                         <VenueBookingActions bookingId={b.id} />
-                      ) : (
-                        <Button size="small" disabled variant="text">
-                          {b.status}
-                        </Button>
                       )}
                       {b.artist?.slug && (
                         <Button
@@ -187,6 +183,15 @@ export default async function VenueBookingsPage({
                           View artist
                         </Button>
                       )}
+                      <Button
+                        component={Link}
+                        href={`/dashboard/bookings/${b.id}`}
+                        variant="text"
+                        size="small"
+                        sx={{ ml: 1 }}
+                      >
+                        View details
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
