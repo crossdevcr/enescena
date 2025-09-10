@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { hasArtistConflict } from "@/lib/booking/conflicts";
 
 export async function POST(req: Request) {
   // Identify current user from cookies
-  const jar = await cookies(); // keep async in your project
+  const jar = await cookies(); // (keep async in your project)
   const idToken = jar.get("id_token")?.value;
   if (!idToken) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
@@ -55,7 +56,24 @@ export async function POST(req: Request) {
   const hours =
     hoursNum != null && !Number.isNaN(hoursNum) && hoursNum > 0 ? hoursNum : null;
 
-  // Create booking (note: uses eventDate per updated schema)
+  // 🔒 Availability check against existing ACCEPTED bookings
+  const conflict = await hasArtistConflict({
+    artistId: artist.id,
+    start: eventDate,
+    hours,
+  });
+
+  if (conflict) {
+    return NextResponse.json(
+      {
+        error: "artist_unavailable",
+        message: "The artist is not available at that time. Please pick another time.",
+      },
+      { status: 409 }
+    );
+  }
+
+  // Create booking
   const booking = await prisma.booking.create({
     data: {
       artistId: artist.id,

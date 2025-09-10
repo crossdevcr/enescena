@@ -19,7 +19,7 @@ export default function ArtistBookingActions({ bookingId }: { bookingId: string 
         window.location.reload();
       } else {
         const j = await res.json().catch(() => ({}));
-        alert(j?.error || "Failed to update booking");
+        alert(j?.message || "Failed to update booking");
       }
     } finally {
       setBusy(false);
