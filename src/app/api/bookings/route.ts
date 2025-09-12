@@ -3,6 +3,8 @@ import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { hasArtistConflict } from "@/lib/booking/conflicts";
+import { sendEmail } from "@/lib/email/mailer";
+import { bookingCreatedForArtist } from "@/lib/email/templates";
 
 export async function POST(req: Request) {
   // Identify current user from cookies
@@ -84,10 +86,34 @@ export async function POST(req: Request) {
       status: "PENDING",
     },
     include: {
-      artist: { select: { name: true, slug: true } },
+      artist: {
+        select: {
+          name: true,
+          slug: true,
+          user: { select: { email: true, name: true } },
+        },
+      },
       venue: { select: { name: true } },
     },
   });
+
+  (async () => {
+    try {
+      const to = booking.artist?.user?.email;
+      if (to) {
+        const tmpl = bookingCreatedForArtist({
+          artistName: booking.artist.user?.name || booking.artist.name || "there",
+          venueName: booking.venue?.name || "a venue",
+          eventISO: booking.eventDate.toISOString(),
+          hours: booking.hours ?? undefined,
+          bookingId: booking.id,
+        });
+        await sendEmail({ to, ...tmpl });
+      }
+    } catch (e) {
+      console.error("[email] bookingCreatedForArtist failed", e);
+    }
+  })();
 
   return NextResponse.json({ ok: true, booking });
 }

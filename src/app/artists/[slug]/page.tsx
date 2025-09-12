@@ -8,7 +8,8 @@ import RequestBookingDialog from "@/components/booking/RequestBookingDialog";
 type PageProps = { params: { slug: string } };
 
 export default async function ArtistPage({ params }: PageProps) {
-  const artist = await getArtistBySlug(params.slug);
+  const { slug } = await params;
+  const artist = await getArtistBySlug(slug);
   if (!artist) return notFound();
 
   return (

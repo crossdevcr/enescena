@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { cookies } from "next/headers";
 import { hasArtistConflict } from "@/lib/booking/conflicts";
+import { sendEmail } from "@/lib/email/mailer";
+import {
+  bookingAcceptedForVenue,
+  bookingDeclinedForVenue,
+  bookingCancelledForArtist,
+} from "@/lib/email/templates";
 
 type Action = "ACCEPT" | "DECLINE" | "CANCEL";
 
@@ -10,7 +16,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = params.id;
+  const { id } = params;
 
   // Auth
   const jar = await cookies();
@@ -41,7 +47,9 @@ export async function PATCH(
     return NextResponse.json({ error: "invalid_action" }, { status: 400 });
   }
 
-  // Artist can ACCEPT/DECLINE when PENDING (must own the artistId)
+  // ──────────────────────────────────────────────────────────────────────────────
+  // ARTIST: ACCEPT / DECLINE (must own the artist, booking must be PENDING)
+  // ──────────────────────────────────────────────────────────────────────────────
   if (me.role === "ARTIST" && me.artist) {
     if (booking.artistId !== me.artist.id) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -51,7 +59,7 @@ export async function PATCH(
     }
 
     if (action === "ACCEPT") {
-      // Load full booking time window to check conflicts
+      // Load time window for conflict check
       const full = await prisma.booking.findUnique({
         where: { id },
         select: { id: true, eventDate: true, hours: true, artistId: true },
@@ -64,38 +72,88 @@ export async function PATCH(
         hours: full.hours ?? undefined,
         excludeBookingId: full.id, // exclude self while checking
       });
-
       if (conflict) {
         return NextResponse.json(
-          {
-            error: "artist_unavailable",
-            message: "This time conflicts with another accepted booking.",
-          },
+          { error: "artist_unavailable", message: "This time conflicts with another accepted booking." },
           { status: 409 }
         );
       }
 
+      // Update → ACCEPTED and select fields for email
       const updated = await prisma.booking.update({
         where: { id },
         data: { status: "ACCEPTED" },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          eventDate: true,
+          hours: true,
+          artist: { select: { name: true } },
+          venue:  { select: { name: true, user: { select: { email: true } } } },
+        },
       });
-      return NextResponse.json({ ok: true, booking: updated });
+
+      // Email the venue (best-effort; don’t block API response)
+      (async () => {
+        try {
+          const to = updated.venue?.user?.email;
+          if (to) {
+            const tmpl = bookingAcceptedForVenue({
+              venueName: updated.venue?.name || "there",
+              artistName: updated.artist?.name || "The artist",
+              eventISO: updated.eventDate.toISOString(),
+              hours: updated.hours ?? undefined,
+              bookingId: updated.id,
+            });
+            const res = await sendEmail({ to, ...tmpl });
+            if (!res.ok) console.error("[email] accepted send failed", res);
+          }
+        } catch (e) {
+          console.error("[email] bookingAcceptedForVenue failed", e);
+        }
+      })();
+
+      return NextResponse.json({ ok: true, booking: { id: updated.id, status: updated.status } });
     }
 
     if (action === "DECLINE") {
-      const updated = await prisma.booking.update({
+      const declined = await prisma.booking.update({
         where: { id },
         data: { status: "DECLINED" },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          artist: { select: { name: true } },
+          venue:  { select: { name: true, user: { select: { email: true } } } },
+        },
       });
-      return NextResponse.json({ ok: true, booking: updated });
+
+      (async () => {
+        try {
+          const to = declined.venue?.user?.email;
+          if (to) {
+            const tmpl = bookingDeclinedForVenue({
+              venueName: declined.venue?.name || "there",
+              artistName: declined.artist?.name || "The artist",
+              bookingId: declined.id,
+            });
+            const res = await sendEmail({ to, ...tmpl });
+            if (!res.ok) console.error("[email] declined send failed", res);
+          }
+        } catch (e) {
+          console.error("[email] bookingDeclinedForVenue failed", e);
+        }
+      })();
+
+      return NextResponse.json({ ok: true, booking: { id: declined.id, status: declined.status } });
     }
 
     return NextResponse.json({ error: "invalid_action_for_role" }, { status: 400 });
   }
 
-  // Venue can CANCEL when PENDING (must own the venueId)
+  // ──────────────────────────────────────────────────────────────────────────────
+  // VENUE: CANCEL (must own the venue, booking must be PENDING)
+  // ──────────────────────────────────────────────────────────────────────────────
   if (me.role === "VENUE" && me.venue) {
     if (booking.venueId !== me.venue.id) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -103,14 +161,39 @@ export async function PATCH(
     if (booking.status !== "PENDING") {
       return NextResponse.json({ error: "invalid_state" }, { status: 400 });
     }
+
     if (action === "CANCEL") {
-      const updated = await prisma.booking.update({
+      const cancelled = await prisma.booking.update({
         where: { id },
         data: { status: "CANCELLED" },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          venue:  { select: { name: true } },
+          artist: { select: { name: true, user: { select: { email: true } } } },
+        },
       });
-      return NextResponse.json({ ok: true, booking: updated });
+
+      (async () => {
+        try {
+          const to = cancelled.artist?.user?.email;
+          if (to) {
+            const tmpl = bookingCancelledForArtist({
+              artistName: cancelled.artist?.name || "there",
+              venueName: cancelled.venue?.name || "the venue",
+              bookingId: cancelled.id,
+            });
+            const res = await sendEmail({ to, ...tmpl });
+            if (!res.ok) console.error("[email] cancelled send failed", res);
+          }
+        } catch (e) {
+          console.error("[email] bookingCancelledForArtist failed", e);
+        }
+      })();
+
+      return NextResponse.json({ ok: true, booking: { id: cancelled.id, status: cancelled.status } });
     }
+
     return NextResponse.json({ error: "invalid_action_for_role" }, { status: 400 });
   }
 
