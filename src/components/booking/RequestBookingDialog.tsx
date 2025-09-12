@@ -14,15 +14,14 @@ import {
 
 type Props = { artistId: string; openText?: string };
 
-// Default duration used on the server if hours is omitted
-const DEFAULT_DURATION_HOURS = 2;
+const DEFAULT_DURATION_HOURS: number = 2;
 
 export default function RequestBookingDialog({ artistId, openText = "Request Booking" }: Props) {
   const [open, setOpen] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const formRef = React.useRef<HTMLFormElement | null>(null);
 
-  // Build a "now" string for the datetime-local min attribute (UTC-safe)
   const nowLocal = React.useMemo(() => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -33,6 +32,27 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
   }, []);
 
+  const resetState = React.useCallback(() => {
+    setError(null);
+    setSubmitting(false);
+    formRef.current?.reset();
+  }, []);
+
+  const handleOpen = React.useCallback(() => {
+    resetState();
+    setOpen(true);
+  }, [resetState]);
+
+  const handleClose = React.useCallback(() => {
+    if (submitting) return;
+    setOpen(false);
+    resetState();
+  }, [submitting, resetState]);
+
+  const handleFieldChange = React.useCallback(() => {
+    if (error) setError(null);
+  }, [error]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -40,18 +60,23 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
     try {
       const fd = new FormData(e.currentTarget);
       const eventDate = String(fd.get("eventDate") || "");
-      const hoursStr = String(fd.get("hours") || "2");
+      const hoursStr = String(fd.get("hours") || "");
       const note = String(fd.get("note") || "");
 
-      // Basic client validation
       if (!eventDate) {
         setError("Please select an event date and time.");
         return;
       }
-      const hours = Number(hoursStr);
-      if (!Number.isFinite(hours) || hours < 1) {
-        setError("Hours must be a number greater than or equal to 1.");
-        return;
+
+      // Parse hours safely
+      let hours: number | undefined = undefined;
+      if (hoursStr) {
+        const parsed = Number(hoursStr);
+        if (!Number.isFinite(parsed) || parsed < 1) {
+          setError("Hours must be a number greater than or equal to 1.");
+          return;
+        }
+        hours = parsed;
       }
 
       const payload = { artistId, eventDate, hours, note };
@@ -62,19 +87,16 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
         body: JSON.stringify(payload),
       });
 
-      // Redirects (e.g., missing venue profile -> profile page)
       if (res.redirected) {
         window.location.href = res.url;
         return;
       }
 
-      // Success
       if (res.ok) {
         window.location.href = "/dashboard/venue/bookings";
         return;
       }
 
-      // Auth / role cases
       if (res.status === 401) {
         window.location.href = "/api/auth/login";
         return;
@@ -83,27 +105,21 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
         setError("You must be a VENUE to request bookings.");
         return;
       }
-
-      // Artist availability conflict
       if (res.status === 409) {
         const j = await res.json().catch(() => ({}));
         setError(j?.message || "The artist is not available at that time. Please pick another time.");
         return;
       }
 
-      // Validation or other errors
       let errMsg = "Failed to create booking.";
       try {
         const j = await res.json();
         if (j?.error) {
-          // Map a couple of known server errors to friendlier text
           if (j.error === "invalid_eventDate") errMsg = "Please provide a valid event date.";
           else if (j.error === "artist_not_found") errMsg = "Artist not found.";
           else errMsg = j.error;
         }
-      } catch {
-        /* ignore parse errors */
-      }
+      } catch {}
       setError(errMsg);
     } finally {
       setSubmitting(false);
@@ -112,12 +128,12 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
 
   return (
     <>
-      <Button variant="contained" size="large" onClick={() => setOpen(true)}>
+      <Button variant="contained" size="large" onClick={handleOpen}>
         {openText}
       </Button>
 
-      <Dialog open={open} onClose={() => !submitting && setOpen(false)} fullWidth maxWidth="sm">
-        <form onSubmit={handleSubmit}>
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <form ref={formRef} onSubmit={handleSubmit}>
           <DialogTitle>Request a booking</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -130,6 +146,7 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
                 InputLabelProps={{ shrink: true }}
                 inputProps={{ min: nowLocal }}
                 required
+                onChange={handleFieldChange}
               />
 
               <TextField
@@ -137,14 +154,21 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
                 label="Hours (optional)"
                 type="number"
                 inputProps={{ min: 1 }}
-                helperText={`If omitted, default duration is ${DEFAULT_DURATION_HOURS} hours.`}
+                helperText={`If omitted, default duration is ${DEFAULT_DURATION_HOURS} hour${DEFAULT_DURATION_HOURS === 1 ? "" : "s"}.`}
+                onChange={handleFieldChange}
               />
 
-              <TextField name="note" label="Note (optional)" multiline minRows={3} />
+              <TextField
+                name="note"
+                label="Note (optional)"
+                multiline
+                minRows={3}
+                onChange={handleFieldChange}
+              />
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpen(false)} disabled={submitting}>
+            <Button onClick={handleClose} disabled={submitting}>
               Cancel
             </Button>
             <Button type="submit" variant="contained" disabled={submitting}>
