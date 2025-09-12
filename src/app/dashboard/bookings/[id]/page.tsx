@@ -54,8 +54,9 @@ export default async function BookingDetailsPage({
   const user = await getCurrentUser();
   if (!user) redirect("/api/auth/login");
 
+  const { id } = await params;
   const booking = await prisma.booking.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: {
       id: true,
       eventDate: true,
