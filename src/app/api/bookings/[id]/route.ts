@@ -12,6 +12,78 @@ import {
 
 type Action = "ACCEPT" | "DECLINE" | "CANCEL";
 
+/**
+ * GET /api/bookings/[id]
+ * Secured details endpoint — only the booking's venue or artist can view.
+ */
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  // Auth via cookies + Cognito
+  const jar = await cookies();
+  const idToken = jar.get("id_token")?.value;
+  if (!idToken) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const payload = await verifyIdToken(idToken).catch(() => null);
+  const email = payload?.email ? String(payload.email) : null;
+  if (!email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // Load current user (with profiles)
+  const me = await prisma.user.findUnique({
+    where: { email },
+    include: { artist: true, venue: true },
+  });
+  if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // Load booking with participants
+  const booking = await prisma.booking.findUnique({
+    where: { id: params.id },
+    select: {
+      id: true,
+      status: true,
+      eventDate: true,
+      hours: true,
+      note: true,
+      createdAt: true,
+      updatedAt: true,
+      artistId: true,
+      venueId: true,
+      artist: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          user: { select: { email: true, name: true } },
+        },
+      },
+      venue: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          user: { select: { email: true, name: true } },
+        },
+      },
+    },
+  });
+
+  if (!booking) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+  // Access control: must be the artist OR the venue for this booking
+  const mineAsArtist = !!(me.artist && booking.artistId === me.artist.id);
+  const mineAsVenue = !!(me.venue && booking.venueId === me.venue.id);
+  if (!mineAsArtist && !mineAsVenue) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  return NextResponse.json({ ok: true, booking });
+}
+
+/**
+ * PATCH /api/bookings/[id]
+ * Role-based transitions:
+ * - ARTIST: ACCEPT / DECLINE (only when PENDING, must own artistId)
+ * - VENUE:  CANCEL  (only when PENDING, must own venueId)
+ * Sends SES email notifications on changes.
+ */
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -74,7 +146,11 @@ export async function PATCH(
       });
       if (conflict) {
         return NextResponse.json(
-          { error: "artist_unavailable", message: "This time conflicts with another booking or an unavailable period." },
+          {
+            error: "artist_unavailable",
+            message:
+              "This time conflicts with another booking or an unavailable period.",
+          },
           { status: 409 }
         );
       }
@@ -89,7 +165,7 @@ export async function PATCH(
           eventDate: true,
           hours: true,
           artist: { select: { name: true } },
-          venue:  { select: { name: true, user: { select: { email: true } } } },
+          venue: { select: { name: true, user: { select: { email: true } } } },
         },
       });
 
@@ -113,7 +189,10 @@ export async function PATCH(
         }
       })();
 
-      return NextResponse.json({ ok: true, booking: { id: updated.id, status: updated.status } });
+      return NextResponse.json({
+        ok: true,
+        booking: { id: updated.id, status: updated.status },
+      });
     }
 
     if (action === "DECLINE") {
@@ -124,7 +203,7 @@ export async function PATCH(
           id: true,
           status: true,
           artist: { select: { name: true } },
-          venue:  { select: { name: true, user: { select: { email: true } } } },
+          venue: { select: { name: true, user: { select: { email: true } } } },
         },
       });
 
@@ -145,10 +224,16 @@ export async function PATCH(
         }
       })();
 
-      return NextResponse.json({ ok: true, booking: { id: declined.id, status: declined.status } });
+      return NextResponse.json({
+        ok: true,
+        booking: { id: declined.id, status: declined.status },
+      });
     }
 
-    return NextResponse.json({ error: "invalid_action_for_role" }, { status: 400 });
+    return NextResponse.json(
+      { error: "invalid_action_for_role" },
+      { status: 400 }
+    );
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
@@ -169,7 +254,7 @@ export async function PATCH(
         select: {
           id: true,
           status: true,
-          venue:  { select: { name: true } },
+          venue: { select: { name: true } },
           artist: { select: { name: true, user: { select: { email: true } } } },
         },
       });
@@ -191,10 +276,16 @@ export async function PATCH(
         }
       })();
 
-      return NextResponse.json({ ok: true, booking: { id: cancelled.id, status: cancelled.status } });
+      return NextResponse.json({
+        ok: true,
+        booking: { id: cancelled.id, status: cancelled.status },
+      });
     }
 
-    return NextResponse.json({ error: "invalid_action_for_role" }, { status: 400 });
+    return NextResponse.json(
+      { error: "invalid_action_for_role" },
+      { status: 400 }
+    );
   }
 
   return NextResponse.json({ error: "forbidden" }, { status: 403 });

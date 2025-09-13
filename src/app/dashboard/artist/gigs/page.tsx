@@ -1,3 +1,4 @@
+import React from 'react';
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/currentUser";
@@ -176,12 +177,15 @@ export default async function ArtistGigsPage({
                     </TableCell>
                     <TableCell>{statusChip(b.status)}</TableCell>
                     <TableCell align="right">
+                      {/* Artist can act on PENDING */}
                       {b.status === "PENDING" && (
                         <ArtistBookingActions bookingId={b.id} />
                       )}
+
+                      {/* View details — always available */}
                       <Button
                         component={Link}
-                        href={`/dashboard/bookings/${b.id}`}
+                        href={`/dashboard/artist/gigs/${b.id}`}
                         variant="text"
                         size="small"
                         sx={{ ml: 1 }}

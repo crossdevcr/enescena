@@ -11,4 +11,10 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     exclude: ["node_modules", ".next", "dist"],
   },
+  esbuild: {
+    // Ensure TSX compiles using the automatic JSX runtime in tests
+    // (so it doesn’t depend on a global React symbol).
+    jsx: "automatic",
+    jsxImportSource: "react",
+  },
 });
