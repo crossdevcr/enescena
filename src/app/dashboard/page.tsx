@@ -90,6 +90,14 @@ export default async function DashboardPage() {
                     >
                       My Gigs
                     </Button>
+                    <Button
+                      component={Link}
+                      href="/dashboard/artist/availability"
+                      variant="outlined"
+                      size="small"
+                    >
+                      Availability
+                    </Button>
                   </Stack>
                 )}
               </Stack>

@@ -74,7 +74,7 @@ export async function PATCH(
       });
       if (conflict) {
         return NextResponse.json(
-          { error: "artist_unavailable", message: "This time conflicts with another accepted booking." },
+          { error: "artist_unavailable", message: "This time conflicts with another booking or an unavailable period." },
           { status: 409 }
         );
       }

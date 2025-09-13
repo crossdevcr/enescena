@@ -49,7 +49,8 @@ model Artist {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  bookings Booking[]
+  bookings             Booking[]
+  ArtistUnavailability ArtistUnavailability[]
 }
 
 model Venue {
@@ -88,4 +89,19 @@ model Booking {
   @@index([artistId, createdAt])
   @@index([venueId, createdAt])
   @@index([status, createdAt])
+}
+
+model ArtistUnavailability {
+  id       String @id @default(cuid())
+  artistId String
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  start  DateTime
+  end    DateTime
+  reason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([artistId, start, end])
 }

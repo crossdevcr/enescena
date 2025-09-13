@@ -68,7 +68,6 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
         return;
       }
 
-      // Parse hours safely
       let hours: number | undefined = undefined;
       if (hoursStr) {
         const parsed = Number(hoursStr);
@@ -107,7 +106,10 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
       }
       if (res.status === 409) {
         const j = await res.json().catch(() => ({}));
-        setError(j?.message || "The artist is not available at that time. Please pick another time.");
+        setError(
+          j?.message ||
+            "This time conflicts with another booking or an unavailable period."
+        );
         return;
       }
 
@@ -137,7 +139,11 @@ export default function RequestBookingDialog({ artistId, openText = "Request Boo
           <DialogTitle>Request a booking</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
-              {error && <Alert severity="error">{error}</Alert>}
+              {error && (
+                <Alert severity="error" data-testid="booking-error">
+                  {error}
+                </Alert>
+              )}
 
               <TextField
                 name="eventDate"
