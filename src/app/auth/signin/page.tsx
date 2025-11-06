@@ -91,12 +91,8 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (result.success) {
-        // Redirect to dashboard based on user role
-        if (result.user?.role === "VENUE") {
-          router.push("/dashboard/venue");
-        } else {
-          router.push("/dashboard/artist");
-        }
+        // Redirect to main dashboard (handles all user roles)
+        router.push("/dashboard");
         router.refresh(); // Refresh to update auth state
       } else {
         if (result.errors) {
