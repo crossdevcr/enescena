@@ -8,7 +8,7 @@ export function bookingCreatedForArtist(params: {
   bookingId: string;
 }) {
   const when = new Date(params.eventISO).toLocaleString("en-US", { timeZone: "America/Costa_Rica" });
-  const link = `${base}/dashboard/bookings/${params.bookingId}`;
+  const link = `${base}/dashboard/artist/gigs/${params.bookingId}`;
   return {
     subject: `New booking request from ${params.venueName}`,
     html: `
@@ -32,7 +32,7 @@ export function bookingAcceptedForVenue(params: {
   bookingId: string;
 }) {
   const when = new Date(params.eventISO).toLocaleString("en-US", { timeZone: "America/Costa_Rica" });
-  const link = `${base}/dashboard/bookings/${params.bookingId}`;
+  const link = `${base}/dashboard/venue/bookings/${params.bookingId}`;
   return {
     subject: `${params.artistName} accepted your booking`,
     html: `
@@ -53,7 +53,7 @@ export function bookingDeclinedForVenue(params: {
   artistName: string;
   bookingId: string;
 }) {
-  const link = `${base}/dashboard/bookings/${params.bookingId}`;
+  const link = `${base}/dashboard/venue/bookings/${params.bookingId}`;
   return {
     subject: `${params.artistName} declined your booking`,
     html: `
@@ -73,7 +73,7 @@ export function bookingCancelledForArtist(params: {
   venueName: string;
   bookingId: string;
 }) {
-  const link = `${base}/dashboard/bookings/${params.bookingId}`;
+  const link = `${base}/dashboard/artist/gigs/${params.bookingId}`;
   return {
     subject: `Booking canceled by ${params.venueName}`,
     html: `
