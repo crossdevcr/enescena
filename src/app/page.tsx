@@ -11,14 +11,17 @@ export default function HomePage() {
           <Image
             src="/enescena_homepage_art.png"
             alt="Enescena Logo"
-            width={400} // Bigger circular logo
-            height={400} // Bigger circular logo
+            width={400}
+            height={400}
             priority
             style={{
-              objectFit: 'cover', // Changed to 'cover' for better circular cropping
+              objectFit: 'cover',
+              borderRadius: '50%',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
               maxWidth: '100%',
-              borderRadius: '50%', // Makes it circular
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)', // Adds nice shadow
+              height: 'auto',
+              width: 'clamp(250px, 50vw, 400px)', // Responsive width with limits
+              aspectRatio: '1 / 1', // Ensures it stays circular
             }}
           />
         </Box>
