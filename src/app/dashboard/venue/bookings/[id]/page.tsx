@@ -26,12 +26,14 @@ export default async function VenueBookingDetails({ params }: { params: { id: st
   if (!me) redirect("/api/auth/login");
   if (me.role !== "VENUE" || !me.venue) redirect("/dashboard");
 
+  const { id } = await params;
   const booking = await prisma.booking.findFirst({
-    where: { id: params.id, venueId: me.venue.id },
+    where: { id, venueId: me.venue.id },
     select: {
       id:true, status:true, eventDate:true, hours:true, note:true, createdAt:true, updatedAt:true,
       artist: { select: { name:true, slug:true, rate:true } },
       venue:  { select: { name:true } },
+      event: { select: { id:true, title:true, slug:true, status:true } },
     },
   });
   if (!booking) redirect("/dashboard/venue/bookings?status=ALL");
@@ -41,6 +43,31 @@ export default async function VenueBookingDetails({ params }: { params: { id: st
       <Stack spacing={2}>
         <Button component={Link} href="/dashboard/venue/bookings" size="small">← Back to bookings</Button>
         <Typography variant="h5" fontWeight={700}>Booking Details</Typography>
+        {/* Event Information */}
+        {booking.event && (
+          <Box sx={{ p: 2, borderRadius: 1, bgcolor: "primary.50", border: 1, borderColor: "primary.200" }}>
+            <Typography variant="subtitle2" color="primary" gutterBottom>
+              Part of Event
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              <Link href={`/dashboard/venue/events/${booking.event.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                {booking.event.title}
+              </Link>
+            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+              {statusChip(booking.event.status)}
+              <Button 
+                component={Link}
+                href={`/dashboard/venue/events/${booking.event.id}`}
+                size="small"
+                variant="outlined"
+              >
+                Manage Event
+              </Button>
+            </Stack>
+          </Box>
+        )}
+
         <Box sx={{ display:"grid", gridTemplateColumns:{ xs:"1fr", sm:"1fr 1fr"}, gap:2 }}>
           <Box>
             <Typography variant="body2" color="text.secondary">Artist</Typography>
@@ -49,7 +76,7 @@ export default async function VenueBookingDetails({ params }: { params: { id: st
             </Typography>
           </Box>
           <Box>
-            <Typography variant="body2" color="text.secondary">Status</Typography>
+            <Typography variant="body2" color="text.secondary">Booking Status</Typography>
             {statusChip(booking.status)}
           </Box>
           <Box>
@@ -60,6 +87,17 @@ export default async function VenueBookingDetails({ params }: { params: { id: st
             <Typography variant="body2" color="text.secondary">Hours</Typography>
             <Typography variant="body1">{booking.hours ?? "—"}</Typography>
           </Box>
+          {booking.event ? (
+            <Box sx={{ gridColumn: "1 / -1" }}>
+              <Typography variant="body2" color="text.secondary">Booking Type</Typography>
+              <Typography variant="body1">Event Booking (automatically created from event)</Typography>
+            </Box>
+          ) : (
+            <Box sx={{ gridColumn: "1 / -1" }}>
+              <Typography variant="body2" color="text.secondary">Booking Type</Typography>
+              <Typography variant="body1">Individual Booking</Typography>
+            </Box>
+          )}
           <Box sx={{ gridColumn: "1 / -1" }}>
             <Typography variant="body2" color="text.secondary">Note</Typography>
             <Typography variant="body1" sx={{ whiteSpace:"pre-wrap" }}>{booking.note ?? "—"}</Typography>

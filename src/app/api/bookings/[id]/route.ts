@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { cookies } from "next/headers";
 import { hasArtistConflict } from "@/lib/booking/conflicts";
+import { createEventForBooking } from "@/lib/booking/eventCreation";
 import { sendEmail } from "@/lib/email/mailer";
 import {
   bookingAcceptedForVenue,
@@ -164,12 +166,46 @@ export async function PATCH(
           status: true,
           eventDate: true,
           hours: true,
+          eventId: true,
+          artistId: true,
           artist: { select: { name: true } },
           venue: { select: { name: true, user: { select: { email: true } } } },
         },
       });
 
-      // Email the venue (best-effort; don’t block API response)
+      // If this booking is part of an event, mark the artist as confirmed
+      if (updated.eventId && updated.artistId) {
+        try {
+          await prisma.eventArtist.updateMany({
+            where: {
+              eventId: updated.eventId,
+              artistId: updated.artistId,
+            },
+            data: {
+              confirmed: true,
+            },
+          });
+          console.log(`Marked artist ${updated.artistId} as confirmed for event ${updated.eventId}`);
+          
+          // Revalidate the event detail page to show updated confirmation status
+          revalidatePath(`/dashboard/venue/events/${updated.eventId}`);
+          revalidatePath(`/dashboard/venue/events`);
+        } catch (error) {
+          console.error("Failed to update EventArtist confirmation:", error);
+          // Don't fail the booking acceptance if EventArtist update fails
+        }
+      }
+
+      // Auto-create event for individual bookings (best-effort, don't block API response)
+      (async () => {
+        try {
+          await createEventForBooking(id);
+        } catch (e) {
+          console.error("[event] Auto-creation failed for booking", id, e);
+        }
+      })();
+
+      // Email the venue (best-effort; don't block API response)
       (async () => {
         try {
           const to = updated.venue?.user?.email;
@@ -202,10 +238,35 @@ export async function PATCH(
         select: {
           id: true,
           status: true,
+          eventId: true,
+          artistId: true,
           artist: { select: { name: true } },
           venue: { select: { name: true, user: { select: { email: true } } } },
         },
       });
+
+      // If this booking is part of an event, mark the artist as not confirmed
+      if (declined.eventId && declined.artistId) {
+        try {
+          await prisma.eventArtist.updateMany({
+            where: {
+              eventId: declined.eventId,
+              artistId: declined.artistId,
+            },
+            data: {
+              confirmed: false,
+            },
+          });
+          console.log(`Marked artist ${declined.artistId} as not confirmed for event ${declined.eventId}`);
+          
+          // Revalidate the event detail page to show updated confirmation status
+          revalidatePath(`/dashboard/venue/events/${declined.eventId}`);
+          revalidatePath(`/dashboard/venue/events`);
+        } catch (error) {
+          console.error("Failed to update EventArtist confirmation on decline:", error);
+          // Don't fail the booking decline if EventArtist update fails
+        }
+      }
 
       (async () => {
         try {

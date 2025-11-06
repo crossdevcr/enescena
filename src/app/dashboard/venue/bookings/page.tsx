@@ -96,6 +96,7 @@ export default async function VenueBookingsPage({
       status: true,
       createdAt: true,
       artist: { select: { name: true, slug: true, rate: true } },
+      event: { select: { id: true, title: true, slug: true, status: true } },
     },
   });
 
@@ -152,9 +153,9 @@ export default async function VenueBookingsPage({
               <TableHead>
                 <TableRow>
                   <TableCell>Artist</TableCell>
-                  <TableCell>Event date</TableCell>
+                  <TableCell>Event / Date</TableCell>
+                  <TableCell>Type</TableCell>
                   <TableCell>Hours</TableCell>
-                  <TableCell>Note</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -162,40 +163,74 @@ export default async function VenueBookingsPage({
               <TableBody>
                 {page.map((b) => (
                   <TableRow key={b.id} hover>
-                    <TableCell>{b.artist?.name ?? "—"}</TableCell>
-                    <TableCell>{formatDateTimeCR(b.eventDate)}</TableCell>
-                    <TableCell>{b.hours ?? "—"}</TableCell>
-                    <TableCell sx={{ maxWidth: 360, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                      {b.note ?? "—"}
+                    <TableCell>
+                      <Stack>
+                        <Typography variant="body2" fontWeight={600}>
+                          {b.artist?.name ?? "—"}
+                        </Typography>
+                        {b.artist?.rate && (
+                          <Typography variant="caption" color="text.secondary">
+                            ₡{b.artist.rate.toLocaleString()}/h
+                          </Typography>
+                        )}
+                      </Stack>
                     </TableCell>
+                    <TableCell>
+                      <Stack>
+                        {b.event ? (
+                          <Typography variant="body2" fontWeight={500} color="primary">
+                            <Link 
+                              href={`/dashboard/venue/events/${b.event.id}`}
+                              style={{ textDecoration: "none", color: "inherit" }}
+                            >
+                              {b.event.title}
+                            </Link>
+                          </Typography>
+                        ) : null}
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDateTimeCR(b.eventDate)}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      {b.event ? (
+                        <Chip label="Event" size="small" variant="outlined" color="primary" />
+                      ) : (
+                        <Chip label="Individual" size="small" variant="outlined" />
+                      )}
+                    </TableCell>
+                    <TableCell>{b.hours ?? "—"}</TableCell>
                     <TableCell>{statusChip(b.status)}</TableCell>
                     <TableCell align="right">
-                      {/* Venue can act on PENDING */}
-                      {b.status === "PENDING" && (
-                        <VenueBookingActions bookingId={b.id} />
-                      )}
-                      {/* View details — always available */}
-                      <Button
-                        component={Link}
-                        href={`/dashboard/venue/bookings/${b.id}`}
-                        variant="text"
-                        size="small"
-                        sx={{ mr: 1 }}
-                      >
-                        View details
-                      </Button>
-                      {/* Link to public artist page */}
-                      {b.artist?.slug && (
+                      <Stack direction="row" spacing={1}>
+                        {/* Venue can act on PENDING */}
+                        {b.status === "PENDING" && (
+                          <VenueBookingActions bookingId={b.id} />
+                        )}
+                        
+                        {/* View details */}
                         <Button
                           component={Link}
-                          href={`/artists/${b.artist.slug}`}
+                          href={`/dashboard/venue/bookings/${b.id}`}
                           variant="text"
                           size="small"
-                          sx={{ ml: 1 }}
                         >
-                          View artist
+                          Details
                         </Button>
-                      )}
+                        
+                        {/* Event management link */}
+                        {b.event && (
+                          <Button
+                            component={Link}
+                            href={`/dashboard/venue/events/${b.event.id}`}
+                            variant="text"
+                            size="small"
+                            color="primary"
+                          >
+                            Event
+                          </Button>
+                        )}
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}

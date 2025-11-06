@@ -21,6 +21,13 @@ enum BookingStatus {
   COMPLETED
 }
 
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -51,6 +58,7 @@ model Artist {
 
   bookings             Booking[]
   ArtistUnavailability ArtistUnavailability[]
+  eventArtists         EventArtist[]
 }
 
 model Venue {
@@ -69,12 +77,14 @@ model Venue {
   updatedAt DateTime @updatedAt
 
   bookings Booking[]
+  events   Event[]
 }
 
 model Booking {
   id        String        @id @default(cuid())
   artistId  String
   venueId   String
+  eventId   String? // Optional: links to event if booking is part of an event
   eventDate DateTime // was `date`
   hours     Int? // new (optional)
   note      String? // new (optional)
@@ -85,9 +95,11 @@ model Booking {
 
   artist Artist @relation(fields: [artistId], references: [id])
   venue  Venue  @relation(fields: [venueId], references: [id])
+  event  Event? @relation(fields: [eventId], references: [id])
 
   @@index([artistId, createdAt])
   @@index([venueId, createdAt])
+  @@index([eventId, createdAt])
   @@index([status, createdAt])
 }
 
@@ -104,4 +116,52 @@ model ArtistUnavailability {
   updatedAt DateTime @updatedAt
 
   @@index([artistId, start, end])
+}
+
+model Event {
+  id      String      @id @default(cuid())
+  venueId String
+  venue   Venue       @relation(fields: [venueId], references: [id])
+
+  title       String
+  slug        String      @unique
+  description String?
+  eventDate   DateTime
+  endDate     DateTime? // Optional end date for multi-day events
+  hours       Int? // Expected duration in hours
+  budget      Int? // Total budget for the event
+  imageUrl    String?
+  status      EventStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventArtists EventArtist[]
+  bookings     Booking[]
+
+  @@index([venueId, eventDate])
+  @@index([status, eventDate])
+  @@index([slug])
+}
+
+model EventArtist {
+  id       String @id @default(cuid())
+  eventId  String
+  artistId String
+  
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  // Artist-specific details for this event
+  fee          Int? // Agreed fee for this artist
+  hours        Int? // Hours this artist will perform
+  notes        String?
+  confirmed    Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, artistId]) // Prevent duplicate artist assignments
+  @@index([eventId])
+  @@index([artistId])
 }

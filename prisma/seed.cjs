@@ -25,10 +25,20 @@ async function ensureUniqueVenueSlug(base) {
   }
   return slug;
 }
+async function ensureUniqueEventSlug(base) {
+  let slug = base, i = 1;
+  while (await prisma.event.findUnique({ where: { slug } })) {
+    slug = `${base}-${++i}`;
+  }
+  return slug;
+}
 
 async function main() {
   // Dev reset (order matters due to FKs)
+  await prisma.eventArtist.deleteMany();
   await prisma.booking.deleteMany();
+  await prisma.event.deleteMany();
+  await prisma.artistUnavailability.deleteMany();
   await prisma.artist.deleteMany();
   await prisma.venue.deleteMany();
   await prisma.user.deleteMany();
@@ -88,7 +98,7 @@ async function main() {
   const venueBase = slugify("Teatro Escena");
   const venueUnique = await ensureUniqueVenueSlug(venueBase);
 
-  await prisma.venue.upsert({
+  const venue = await prisma.venue.upsert({
     where: { userId: venueUser.id },
     update: {
       name: "Teatro Escena",
@@ -107,6 +117,105 @@ async function main() {
     },
   });
   console.log("✅ Seeded venue");
+
+  // --- Sample Events ---
+  const artists = await prisma.artist.findMany();
+  
+  if (artists.length >= 2) {
+    const seedEvents = [
+      {
+        title: "Blues & Rock Night",
+        description: "An evening of blues and rock music featuring multiple talented artists.",
+        eventDate: new Date("2025-12-15T20:00:00"),
+        endDate: new Date("2025-12-15T23:00:00"),
+        hours: 3,
+        budget: 75000,
+        status: "PUBLISHED",
+        artists: [
+          { artistId: artists[0].id, fee: 30000, hours: 1.5, confirmed: true },
+          { artistId: artists[1].id, fee: 25000, hours: 1.5, confirmed: false },
+        ],
+      },
+      {
+        title: "New Year's Celebration",
+        description: "Welcome 2026 with amazing live music and entertainment.",
+        eventDate: new Date("2025-12-31T21:00:00"),
+        endDate: new Date("2026-01-01T02:00:00"),
+        hours: 5,
+        budget: 120000,
+        status: "DRAFT",
+        artists: [
+          { artistId: artists[0].id, fee: 40000, hours: 2, confirmed: false },
+        ],
+      },
+    ];
+
+    for (const eventData of seedEvents) {
+      const eventSlug = await ensureUniqueEventSlug(slugify(eventData.title));
+      
+      const event = await prisma.event.create({
+        data: {
+          venueId: venue.id,
+          title: eventData.title,
+          slug: eventSlug,
+          description: eventData.description,
+          eventDate: eventData.eventDate,
+          endDate: eventData.endDate,
+          hours: eventData.hours,
+          budget: eventData.budget,
+          status: eventData.status,
+        },
+      });
+
+      // Create EventArtist relationships
+      for (const eventArtist of eventData.artists) {
+        await prisma.eventArtist.create({
+          data: {
+            eventId: event.id,
+            artistId: eventArtist.artistId,
+            fee: eventArtist.fee,
+            hours: eventArtist.hours,
+            confirmed: eventArtist.confirmed,
+          },
+        });
+      }
+
+      // Create some sample bookings linked to events
+      if (eventData.status === "PUBLISHED") {
+        for (const eventArtist of eventData.artists) {
+          if (eventArtist.confirmed) {
+            await prisma.booking.create({
+              data: {
+                artistId: eventArtist.artistId,
+                venueId: venue.id,
+                eventId: event.id,
+                eventDate: eventData.eventDate,
+                hours: eventArtist.hours,
+                status: "ACCEPTED",
+                note: `Booking for ${eventData.title}`,
+              },
+            });
+          }
+        }
+      }
+    }
+    console.log("✅ Seeded events and event bookings");
+
+    // Create some individual bookings (not linked to events)
+    if (artists.length > 0) {
+      await prisma.booking.create({
+        data: {
+          artistId: artists[0].id,
+          venueId: venue.id,
+          eventDate: new Date("2025-11-20T19:00:00"),
+          hours: 2,
+          status: "PENDING",
+          note: "Individual booking request for private event",
+        },
+      });
+      console.log("✅ Seeded individual bookings");
+    }
+  }
 }
 
 main()
