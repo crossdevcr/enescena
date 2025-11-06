@@ -69,8 +69,13 @@ export default async function VenueEventsPage() {
   });
 
   return (
-    <Container sx={{ py: 6, maxWidth: 1200 }}>
-      <Stack spacing={3}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6, maxWidth: 1200 }}>
+        <Stack spacing={3}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h4" fontWeight={700}>
             My Events
@@ -220,5 +225,6 @@ export default async function VenueEventsPage() {
         )}
       </Stack>
     </Container>
+    </Box>
   );
 }

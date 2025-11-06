@@ -39,8 +39,13 @@ export default async function VenueBookingDetails({ params }: { params: { id: st
   if (!booking) redirect("/dashboard/venue/bookings?status=ALL");
 
   return (
-    <Container sx={{ py: 6 }}>
-      <Stack spacing={2}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6 }}>
+        <Stack spacing={2}>
         <Button component={Link} href="/dashboard/venue/bookings" size="small">← Back to bookings</Button>
         <Typography variant="h5" fontWeight={700}>Booking Details</Typography>
         {/* Event Information */}
@@ -112,5 +117,6 @@ export default async function VenueBookingDetails({ params }: { params: { id: st
         </Box>
       </Stack>
     </Container>
+    </Box>
   );
 }

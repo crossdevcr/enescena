@@ -37,7 +37,12 @@ export default async function ArtistGigDetails({ params }: { params: { id: strin
   if (!booking) redirect("/dashboard/artist/gigs");
 
   return (
-    <Container sx={{ py: 6 }}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6 }}>
       <Stack spacing={2}>
         <Button component={Link} href="/dashboard/artist/gigs" size="small">← Back to requests</Button>
         <Typography variant="h5" fontWeight={700}>Booking Details</Typography>
@@ -72,5 +77,6 @@ export default async function ArtistGigDetails({ params }: { params: { id: strin
         </Box>
       </Stack>
     </Container>
+    </Box>
   );
 }

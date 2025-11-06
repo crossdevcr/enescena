@@ -122,8 +122,13 @@ export default async function VenueBookingsPage({
       : `/dashboard/venue/bookings?status=${status}`;
 
   return (
-    <Container sx={{ py: 6 }}>
-      <Stack spacing={2}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6 }}>
+        <Stack spacing={2}>
         <Typography variant="h4" fontWeight={700}>My Bookings</Typography>
 
         <StatusTabs
@@ -255,5 +260,6 @@ export default async function VenueBookingsPage({
         )}
       </Stack>
     </Container>
+    </Box>
   );
 }

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
-  Alert, Button, Container, Stack, Table, TableBody, TableCell,
+  Alert, Box, Button, Container, Stack, Table, TableBody, TableCell,
   TableHead, TableRow, Typography
 } from "@mui/material";
 import AddBlackoutForm from "@/components/availability/AddBlackoutForm";
@@ -37,7 +37,12 @@ export default async function ArtistAvailabilityPage() {
   });
 
   return (
-    <Container sx={{ py: 6 }}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6 }}>
       <Stack spacing={2}>
         <Typography variant="h4" fontWeight={700}>My Availability</Typography>
         <Typography variant="body2" color="text.secondary">
@@ -76,5 +81,6 @@ export default async function ArtistAvailabilityPage() {
         )}
       </Stack>
     </Container>
+    </Box>
   );
 }

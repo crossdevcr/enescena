@@ -82,8 +82,13 @@ export default function NewEventPage() {
   };
 
   return (
-    <Container sx={{ py: 6, maxWidth: 800 }}>
-      <Stack spacing={3}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6, maxWidth: 800 }}>
+        <Stack spacing={3}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h4" fontWeight={700}>
             Create New Event
@@ -216,5 +221,6 @@ export default function NewEventPage() {
         </Box>
       </Stack>
     </Container>
+    </Box>
   );
 }
