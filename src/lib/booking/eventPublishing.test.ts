@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeEach, vi, Mock } from "vitest";
 import { createBookingRequestsForEvent, cancelBookingRequestsForEvent } from "./eventPublishing";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email/mailer";
 
-// Mock prisma
+// Mock prisma and email
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     event: {
+      findUnique: vi.fn()
+    },
+    venue: {
       findUnique: vi.fn()
     },
     booking: {
@@ -16,7 +20,12 @@ vi.mock("@/lib/prisma", () => ({
   }
 }));
 
+vi.mock("@/lib/email/mailer", () => ({
+  sendEmail: vi.fn()
+}));
+
 const mockPrisma = prisma as any;
+const mockSendEmail = sendEmail as Mock;
 
 describe("Event Publishing", () => {
   beforeEach(() => {
@@ -34,20 +43,50 @@ describe("Event Publishing", () => {
       eventArtists: [
         {
           artistId: "artist-1",
-          artist: { id: "artist-1", name: "Artist One", slug: "artist-one" },
+          artist: { 
+            id: "artist-1", 
+            name: "Artist One", 
+            slug: "artist-one",
+            user: { email: "artist1@test.com", name: "Artist One" }
+          },
           confirmed: false
         },
         {
           artistId: "artist-2", 
-          artist: { id: "artist-2", name: "Artist Two", slug: "artist-two" },
+          artist: { 
+            id: "artist-2", 
+            name: "Artist Two", 
+            slug: "artist-two",
+            user: { email: "artist2@test.com", name: "Artist Two" }
+          },
           confirmed: false
         }
       ]
     };
 
+    const mockVenue = {
+      name: "Test Venue"
+    };
+
     it("should create booking requests for unconfirmed artists when event is published", async () => {
       mockPrisma.event.findUnique.mockResolvedValue(mockEvent);
+      mockPrisma.venue.findUnique.mockResolvedValue(mockVenue);
       mockPrisma.booking.findFirst.mockResolvedValue(null); // No existing bookings
+      
+      // Mock booking creation to return booking with artist info
+      mockPrisma.booking.create
+        .mockResolvedValueOnce({
+          id: "booking-1",
+          eventDate: mockEvent.eventDate,
+          hours: 3,
+          artist: mockEvent.eventArtists[0].artist
+        })
+        .mockResolvedValueOnce({
+          id: "booking-2", 
+          eventDate: mockEvent.eventDate,
+          hours: 3,
+          artist: mockEvent.eventArtists[1].artist
+        });
 
       await createBookingRequestsForEvent("event-1");
 
@@ -57,7 +96,14 @@ describe("Event Publishing", () => {
           eventArtists: {
             where: { confirmed: false },
             include: {
-              artist: { select: { id: true, name: true, slug: true } }
+              artist: { 
+                select: { 
+                  id: true, 
+                  name: true, 
+                  slug: true,
+                  user: { select: { email: true, name: true } }
+                } 
+              }
             }
           }
         }
@@ -76,6 +122,14 @@ describe("Event Publishing", () => {
           venueId: "venue-1",
           artistId: "artist-1",
           eventId: "event-1"
+        },
+        include: {
+          artist: {
+            select: {
+              name: true,
+              user: { select: { email: true, name: true } }
+            }
+          }
         }
       });
 
@@ -90,15 +144,49 @@ describe("Event Publishing", () => {
           venueId: "venue-1",
           artistId: "artist-2",
           eventId: "event-1"
+        },
+        include: {
+          artist: {
+            select: {
+              name: true,
+              user: { select: { email: true, name: true } }
+            }
+          }
         }
       });
+
+      // Wait for async email operations to complete
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Check that email notifications were sent
+      expect(mockSendEmail).toHaveBeenCalledTimes(2);
+      expect(mockSendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "artist1@test.com",
+          subject: "New booking request from Test Venue"
+        })
+      );
+      expect(mockSendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "artist2@test.com", 
+          subject: "New booking request from Test Venue"
+        })
+      );
     });
 
     it("should skip creating bookings for artists that already have bookings", async () => {
       mockPrisma.event.findUnique.mockResolvedValue(mockEvent);
+      mockPrisma.venue.findUnique.mockResolvedValue(mockVenue);
       mockPrisma.booking.findFirst
         .mockResolvedValueOnce({ id: "existing-booking" }) // First artist has existing booking
         .mockResolvedValueOnce(null); // Second artist doesn't
+        
+      mockPrisma.booking.create.mockResolvedValue({
+        id: "booking-2",
+        eventDate: mockEvent.eventDate,
+        hours: 3,
+        artist: mockEvent.eventArtists[1].artist
+      });
 
       await createBookingRequestsForEvent("event-1");
 
@@ -113,6 +201,14 @@ describe("Event Publishing", () => {
           venueId: "venue-1",
           artistId: "artist-2",
           eventId: "event-1"
+        },
+        include: {
+          artist: {
+            select: {
+              name: true,
+              user: { select: { email: true, name: true } }
+            }
+          }
         }
       });
     });
@@ -139,6 +235,51 @@ describe("Event Publishing", () => {
       });
 
       await expect(createBookingRequestsForEvent("event-1")).rejects.toThrow("Event must have an event date to create booking requests");
+    });
+
+    it("should send email notifications to artists when creating booking requests", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue(mockEvent);
+      mockPrisma.venue.findUnique.mockResolvedValue(mockVenue);
+      mockPrisma.booking.findFirst.mockResolvedValue(null);
+      mockPrisma.booking.create.mockResolvedValue({
+        id: "booking-1",
+        eventDate: mockEvent.eventDate,
+        hours: 3,
+        artist: mockEvent.eventArtists[0].artist
+      });
+
+      await createBookingRequestsForEvent("event-1");
+
+      // Wait for async email operations 
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(mockSendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "artist1@test.com",
+          subject: "New booking request from Test Venue",
+          html: expect.stringContaining("New booking request"),
+          text: expect.stringContaining("New booking request from Test Venue")
+        })
+      );
+    });
+
+    it("should handle email failures gracefully without breaking booking creation", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue(mockEvent);
+      mockPrisma.venue.findUnique.mockResolvedValue(mockVenue);
+      mockPrisma.booking.findFirst.mockResolvedValue(null);
+      mockPrisma.booking.create.mockResolvedValue({
+        id: "booking-1",
+        eventDate: mockEvent.eventDate,
+        hours: 3,
+        artist: mockEvent.eventArtists[0].artist
+      });
+      
+      mockSendEmail.mockRejectedValue(new Error("Email service unavailable"));
+
+      // Should not throw even if email fails
+      await expect(createBookingRequestsForEvent("event-1")).resolves.not.toThrow();
+      
+      expect(mockPrisma.booking.create).toHaveBeenCalled();
     });
   });
 

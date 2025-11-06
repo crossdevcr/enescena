@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { Event, EventArtist, Artist } from "@prisma/client";
+import { sendEmail } from "@/lib/email/mailer";
+import { bookingCreatedForArtist } from "@/lib/email/templates";
 
 interface EventWithArtists extends Event {
   eventArtists: (EventArtist & {
-    artist: Pick<Artist, "id" | "name" | "slug">;
+    artist: Pick<Artist, "id" | "name" | "slug"> & {
+      user: { email: string; name: string } | null;
+    };
   })[];
 }
 
@@ -18,7 +22,14 @@ export async function createBookingRequestsForEvent(eventId: string): Promise<vo
       eventArtists: {
         where: { confirmed: false }, // Only create bookings for unconfirmed artists
         include: {
-          artist: { select: { id: true, name: true, slug: true } }
+          artist: { 
+            select: { 
+              id: true, 
+              name: true, 
+              slug: true,
+              user: { select: { email: true, name: true } }
+            } 
+          }
         }
       }
     }
@@ -37,6 +48,12 @@ export async function createBookingRequestsForEvent(eventId: string): Promise<vo
     throw new Error("Event must have an event date to create booking requests");
   }
 
+  // Get venue information for email
+  const venue = await prisma.venue.findUnique({
+    where: { id: event.venueId },
+    select: { name: true }
+  });
+
   // Create booking requests for each artist that doesn't already have one
   for (const eventArtist of event.eventArtists) {
     // Check if booking request already exists for this artist and event
@@ -49,9 +66,11 @@ export async function createBookingRequestsForEvent(eventId: string): Promise<vo
 
     if (!existingBooking) {
       // Create a booking request
-      await prisma.booking.create({
+      const bookingId = `b_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      
+      const booking = await prisma.booking.create({
         data: {
-          id: `b_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: bookingId,
           eventDate: event.eventDate,
           hours: event.hours,
           note: `Booking request for event: ${event.title}`,
@@ -59,10 +78,40 @@ export async function createBookingRequestsForEvent(eventId: string): Promise<vo
           venueId: event.venueId,
           artistId: eventArtist.artistId,
           eventId: event.id
+        },
+        include: {
+          artist: {
+            select: {
+              name: true,
+              user: { select: { email: true, name: true } }
+            }
+          }
         }
       });
 
       console.log(`Created booking request for artist ${eventArtist.artist.name} for event ${event.title}`);
+
+      // Send email notification to artist (async, don't block)
+      (async () => {
+        try {
+          const artistEmail = booking.artist?.user?.email;
+          if (artistEmail) {
+            const tmpl = bookingCreatedForArtist({
+              artistName: booking.artist.user?.name || booking.artist.name || "there",
+              venueName: venue?.name || "a venue",
+              eventISO: booking.eventDate.toISOString(),
+              hours: booking.hours ?? undefined,
+              bookingId: booking.id,
+            });
+            await sendEmail({ to: artistEmail, ...tmpl });
+            console.log(`Email notification sent to ${booking.artist.name} for event ${event.title}`);
+          } else {
+            console.log(`No email address found for artist ${booking.artist.name}`);
+          }
+        } catch (error) {
+          console.error(`Failed to send email notification to artist ${booking.artist.name}:`, error);
+        }
+      })();
     } else {
       console.log(`Booking request already exists for artist ${eventArtist.artist.name} for event ${event.title}`);
     }
