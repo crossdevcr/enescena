@@ -1,0 +1,428 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Stack,
+  Typography,
+  TextField,
+  MenuItem,
+  Chip,
+} from "@mui/material";
+import { useRouter } from "next/navigation";
+
+interface Event {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  eventDate: Date;
+  endDate: Date | null;
+  hours: number | null;
+  budget: number | null;
+  status: string;
+  eventArtists: Array<{
+    id: string;
+    artistId: string;
+    confirmed: boolean;
+    artist: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  }>;
+}
+
+interface Props {
+  event: Event;
+  canManage: boolean;
+}
+
+export default function EventActionButtons({ event, canManage }: Props) {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addArtistDialogOpen, setAddArtistDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [availableArtists, setAvailableArtists] = useState<Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>>([]);
+  
+  const router = useRouter();
+
+  // Form state for editing event
+  const [editForm, setEditForm] = useState({
+    title: event.title,
+    description: event.description || "",
+    eventDate: new Date(event.eventDate).toISOString().slice(0, 16),
+    endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : "",
+    hours: event.hours?.toString() || "",
+    budget: event.budget?.toString() || "",
+    status: event.status,
+  });
+
+  const [addArtistForm, setAddArtistForm] = useState({
+    artistId: "",
+    searchTerm: "",
+  });
+
+  if (!canManage) {
+    return null;
+  }
+
+  const handleEditEvent = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: editForm.title,
+          description: editForm.description || null,
+          eventDate: editForm.eventDate,
+          endDate: editForm.endDate || null,
+          hours: editForm.hours ? parseInt(editForm.hours) : null,
+          budget: editForm.budget ? parseInt(editForm.budget) : null,
+          status: editForm.status,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to update event");
+      }
+
+      setEditDialogOpen(false);
+      router.refresh(); // Refresh the page to show updated data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddArtist = async () => {
+    if (!addArtistForm.artistId) {
+      setError("Please select an artist");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/events/${event.id}/artists`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          artistId: addArtistForm.artistId,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to add artist");
+      }
+
+      setAddArtistDialogOpen(false);
+      setAddArtistForm({ artistId: "", searchTerm: "" });
+      router.refresh(); // Refresh the page to show updated data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEvent = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "CANCELLED",
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to cancel event");
+      }
+
+      setCancelDialogOpen(false);
+      router.refresh(); // Refresh the page to show updated data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchArtists = async (searchTerm: string) => {
+    if (searchTerm.length < 2) {
+      setAvailableArtists([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/artists?search=${encodeURIComponent(searchTerm)}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Filter out artists already in the event
+        const existingArtistIds = event.eventArtists.map(ea => ea.artistId);
+        const filteredArtists = data.artists?.filter((artist: any) => 
+          !existingArtistIds.includes(artist.id)
+        ) || [];
+        setAvailableArtists(filteredArtists);
+      }
+    } catch (error) {
+      console.error("Failed to search artists:", error);
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Actions
+        </Typography>
+        
+        <Stack spacing={2}>
+          {event.status === "DRAFT" && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              This event is in draft mode. Publish it to make it visible to artists.
+            </Alert>
+          )}
+          
+          <Button
+            variant="outlined"
+            fullWidth
+            disabled={event.status === "CANCELLED" || loading}
+            onClick={() => setEditDialogOpen(true)}
+          >
+            Edit Event Details
+          </Button>
+          
+          <Button
+            variant="outlined"
+            fullWidth
+            disabled={event.status === "CANCELLED" || loading}
+            onClick={() => setAddArtistDialogOpen(true)}
+          >
+            Add Artists
+          </Button>
+          
+          {event.status !== "CANCELLED" && (
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              disabled={loading}
+              onClick={() => setCancelDialogOpen(true)}
+            >
+              Cancel Event
+            </Button>
+          )}
+
+          {error && (
+            <Alert severity="error">
+              {error}
+            </Alert>
+          )}
+        </Stack>
+      </CardContent>
+
+      {/* Edit Event Dialog */}
+      <Dialog 
+        open={editDialogOpen} 
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Edit Event Details</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ pt: 1 }}>
+            <TextField
+              label="Title"
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              required
+              fullWidth
+            />
+            
+            <TextField
+              label="Description"
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              multiline
+              rows={3}
+              fullWidth
+            />
+            
+            <TextField
+              label="Event Date"
+              type="datetime-local"
+              value={editForm.eventDate}
+              onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })}
+              required
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            
+            <TextField
+              label="End Date (Optional)"
+              type="datetime-local"
+              value={editForm.endDate}
+              onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            
+            <TextField
+              label="Duration (hours)"
+              type="number"
+              value={editForm.hours}
+              onChange={(e) => setEditForm({ ...editForm, hours: e.target.value })}
+              fullWidth
+            />
+            
+            <TextField
+              label="Budget (₡)"
+              type="number"
+              value={editForm.budget}
+              onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
+              fullWidth
+            />
+            
+            <TextField
+              label="Status"
+              select
+              value={editForm.status}
+              onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+              fullWidth
+            >
+              <MenuItem value="DRAFT">Draft</MenuItem>
+              <MenuItem value="PUBLISHED">Published</MenuItem>
+              <MenuItem value="COMPLETED">Completed</MenuItem>
+            </TextField>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleEditEvent} 
+            variant="contained"
+            disabled={loading || !editForm.title}
+          >
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Artist Dialog */}
+      <Dialog 
+        open={addArtistDialogOpen} 
+        onClose={() => setAddArtistDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add Artist to Event</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ pt: 1 }}>
+            <TextField
+              label="Search Artists"
+              value={addArtistForm.searchTerm}
+              onChange={(e) => {
+                setAddArtistForm({ ...addArtistForm, searchTerm: e.target.value });
+                searchArtists(e.target.value);
+              }}
+              placeholder="Type artist name..."
+              fullWidth
+            />
+            
+            {availableArtists.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Available Artists:
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {availableArtists.map((artist) => (
+                    <Chip
+                      key={artist.id}
+                      label={artist.name}
+                      onClick={() => setAddArtistForm({ 
+                        ...addArtistForm, 
+                        artistId: artist.id,
+                        searchTerm: artist.name 
+                      })}
+                      color={addArtistForm.artistId === artist.id ? "primary" : "default"}
+                      variant={addArtistForm.artistId === artist.id ? "filled" : "outlined"}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddArtistDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleAddArtist} 
+            variant="contained"
+            disabled={loading || !addArtistForm.artistId}
+          >
+            {loading ? "Adding..." : "Add Artist"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cancel Event Dialog */}
+      <Dialog 
+        open={cancelDialogOpen} 
+        onClose={() => setCancelDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Cancel Event</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to cancel this event? This action cannot be undone.
+            All pending booking requests will be cancelled.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelDialogOpen(false)}>Keep Event</Button>
+          <Button 
+            onClick={handleCancelEvent} 
+            variant="contained"
+            color="error"
+            disabled={loading}
+          >
+            {loading ? "Cancelling..." : "Cancel Event"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Card>
+  );
+}

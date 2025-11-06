@@ -15,8 +15,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
-import EventArtistManagement from "@/components/events/EventArtistManagement";
-import EventEditForm from "@/components/events/EventEditForm";
+import EventActionButtons from "@/components/events/EventActionButtons";
 
 function statusChip(status: string) {
   const map: Record<string, "default" | "warning" | "success" | "error" | "info"> = {
@@ -169,11 +168,7 @@ export default async function EventDetailsPage({
                   )}
                 </Stack>
 
-                {canManage && (
-                  <Box sx={{ mt: 3 }}>
-                    <EventEditForm event={event} />
-                  </Box>
-                )}
+
               </CardContent>
             </Card>
 
@@ -184,12 +179,45 @@ export default async function EventDetailsPage({
                   Artists ({event.eventArtists.length})
                 </Typography>
                 
-                <EventArtistManagement 
-                  eventId={event.id}
-                  eventArtists={event.eventArtists}
-                  canManage={canManage}
-                  currentUserId={user.id}
-                />
+                {event.eventArtists.length > 0 ? (
+                  <Stack spacing={2} sx={{ mt: 2 }}>
+                    {event.eventArtists.map((eventArtist) => (
+                      <Box 
+                        key={eventArtist.id}
+                        sx={{ 
+                          p: 2, 
+                          borderRadius: 1, 
+                          bgcolor: "action.hover",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}
+                      >
+                        <Stack>
+                          <Typography variant="subtitle2">
+                            {eventArtist.artist.name}
+                          </Typography>
+                          {eventArtist.notes && (
+                            <Typography variant="caption" color="text.secondary">
+                              {eventArtist.notes}
+                            </Typography>
+                          )}
+                        </Stack>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Chip 
+                            label={eventArtist.confirmed ? "Confirmed" : "Pending"} 
+                            size="small" 
+                            color={eventArtist.confirmed ? "success" : "default"} 
+                          />
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    No artists added yet. Use the "Add Artists" button to invite artists to this event.
+                  </Typography>
+                )}
               </CardContent>
             </Card>
 
@@ -284,49 +312,7 @@ export default async function EventDetailsPage({
             </Card>
 
             {/* Actions */}
-            {canManage && (
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Actions
-                  </Typography>
-                  
-                  <Stack spacing={2}>
-                    {event.status === "DRAFT" && (
-                      <Alert severity="info" sx={{ mb: 2 }}>
-                        This event is in draft mode. Publish it to make it visible to artists.
-                      </Alert>
-                    )}
-                    
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      disabled={event.status === "CANCELLED"}
-                    >
-                      Edit Event Details
-                    </Button>
-                    
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      disabled={event.status === "CANCELLED"}
-                    >
-                      Add Artists
-                    </Button>
-                    
-                    {event.status !== "CANCELLED" && (
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        fullWidth
-                      >
-                        Cancel Event
-                      </Button>
-                    )}
-                  </Stack>
-                </CardContent>
-              </Card>
-            )}
+            <EventActionButtons event={event} canManage={canManage} />
           </Stack>
         </Box>
       </Stack>
