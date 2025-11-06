@@ -117,7 +117,7 @@ export default async function DashboardPage() {
                     </Button>
                   </Stack>
                 ) : (
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
                     <Button
                       component={Link}
                       href="/dashboard/venue/profile"
@@ -128,11 +128,11 @@ export default async function DashboardPage() {
                     </Button>
                     <Button
                       component={Link}
-                      href="/dashboard/venue/book"
-                      variant="outlined"
+                      href="/dashboard/venue/events"
+                      variant="contained"
                       size="small"
                     >
-                      Book an Artist
+                      My Events
                     </Button>
                     <Button
                       component={Link}
@@ -141,6 +141,14 @@ export default async function DashboardPage() {
                       size="small"
                     >
                       My Bookings
+                    </Button>
+                    <Button
+                      component={Link}
+                      href="/dashboard/venue/book"
+                      variant="outlined"
+                      size="small"
+                    >
+                      Book an Artist
                     </Button>
                   </Stack>
                 )}
