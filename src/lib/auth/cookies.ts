@@ -69,3 +69,9 @@ export async function getTokens() {
     refreshToken: jar.get(REFRESH)?.value,
   };
 }
+
+// Helper to get just the access token
+export async function getAccessToken(): Promise<string | undefined> {
+  const tokens = await getTokens();
+  return tokens.accessToken;
+}
