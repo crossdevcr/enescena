@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { createBookingRequestsForEvent, cancelBookingRequestsForEvent } from "@/lib/booking/eventPublishing";
 
 /**
  * GET /api/events/[id]
@@ -173,6 +174,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
+  // Get current event status before update to detect status changes
+  const currentEvent = await prisma.event.findUnique({
+    where: { id },
+    select: { status: true }
+  });
+
   const updatedEvent = await prisma.event.update({
     where: { id },
     data: updateData,
@@ -184,6 +191,23 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }
     }
   });
+
+  // Handle status change effects
+  if (status && currentEvent && status !== currentEvent.status) {
+    try {
+      if (status === "PUBLISHED") {
+        // Create booking requests for all artists when event is published
+        await createBookingRequestsForEvent(id);
+      } else if (currentEvent.status === "PUBLISHED" && ["DRAFT", "CANCELLED"].includes(status)) {
+        // Cancel booking requests when unpublishing or cancelling
+        await cancelBookingRequestsForEvent(id);
+      }
+    } catch (error) {
+      console.error("Error handling event status change:", error);
+      // Don't fail the whole request, just log the error
+      // The event status was already updated successfully
+    }
+  }
 
   return NextResponse.json({ event: updatedEvent });
 }
