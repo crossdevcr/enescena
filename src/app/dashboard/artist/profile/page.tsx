@@ -13,13 +13,8 @@ export default async function ArtistProfilePage() {
   const a = user.artist;
 
   return (
-    <Box sx={{ 
-      minHeight: "100vh", 
-      backgroundColor: "grey.50", 
-      py: 4 
-    }}>
-      <Container sx={{ py: 6, maxWidth: 720 }}>
-        <Stack spacing={3}>
+    <Container sx={{ py: 6, maxWidth: 720 }}>
+      <Stack spacing={3}>
         <Typography variant="h4" fontWeight={700}>Artist Profile</Typography>
 
         <ArtistProfileForm
@@ -33,6 +28,5 @@ export default async function ArtistProfilePage() {
         />
       </Stack>
     </Container>
-    </Box>
   );
 }
