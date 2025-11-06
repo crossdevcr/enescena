@@ -121,19 +121,19 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        py: 4
+        py: 4,
+        px: 2
       }}
     >
-      <Container maxWidth="sm">
-        <Card 
-          sx={{ 
-            width: "100%", 
-            maxWidth: 400,
-            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-            border: "1px solid",
-            borderColor: "grey.200"
-          }}
-        >
+      <Card 
+        sx={{ 
+          width: "100%", 
+          maxWidth: 400,
+          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+          border: "1px solid",
+          borderColor: "grey.200"
+        }}
+      >
           <CardContent sx={{ p: 5 }}>
             {/* Brand Header */}
             <Box sx={{ textAlign: "center", mb: 4 }}>
@@ -291,7 +291,6 @@ export default function LoginPage() {
             </Box>
           </CardContent>
         </Card>
-      </Container>
     </Box>
   );
 }
