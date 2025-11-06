@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ReactElement } from 'react';
+import { ReactElement } from 'react';
 import {
   Box,
   Drawer,
@@ -10,7 +10,6 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
-  Divider,
   Chip,
   useTheme,
   IconButton
@@ -19,13 +18,11 @@ import {
   Dashboard as DashboardIcon,
   Person as PersonIcon,
   Event as EventIcon,
-  Settings as SettingsIcon,
   Business as BusinessIcon,
   MusicNote as MusicIcon,
   CalendarMonth as CalendarIcon,
   BookOnline as BookingIcon,
   AdminPanelSettings as AdminIcon,
-  Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
@@ -110,15 +107,6 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
   const theme = useTheme();
   const { isMobile } = useResponsive();
 
-  const getUserIcon = () => {
-    switch(user?.role) {
-      case 'ARTIST': return <MusicIcon />;
-      case 'VENUE': return <BusinessIcon />;
-      case 'ADMIN': return <AdminIcon />;
-      default: return <PersonIcon />;
-    }
-  };
-
   const getRoleColor = () => {
     switch(user?.role) {
       case 'ARTIST': return theme.palette.primary.main;
@@ -143,9 +131,9 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
           alignItems: 'center',
           justifyContent: 'space-between'
         }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
             Menu
-            </Typography>
+          </Typography>
           <IconButton 
             onClick={onMobileClose}
             sx={{ color: 'white' }}
