@@ -19,8 +19,6 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  useMediaQuery,
-  useTheme,
   Divider,
   Skeleton
 } from "@mui/material";
@@ -39,15 +37,14 @@ import {
 } from "@mui/icons-material";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigation } from "@/contexts/NavigationContext";
+import { useResponsive } from "@/hooks/useResponsive";
 
 export default function NavBar() {
   const { user, isAuthenticated, isLoading, signOut } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { dashboardMobileOpen, toggleDashboardMobile } = useNavigation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const { isMobile, isTablet, mounted } = useResponsive();
   const router = useRouter();
   const pathname = usePathname();
   
@@ -280,7 +277,7 @@ export default function NavBar() {
     </Box>
   );
 
-  if (isLoading) {
+  if (isLoading || !mounted) {
     return (
       <AppBar 
         position="static"

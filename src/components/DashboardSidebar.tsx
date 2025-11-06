@@ -12,7 +12,6 @@ import {
   Typography,
   Divider,
   Chip,
-  useMediaQuery,
   useTheme,
   IconButton
 } from '@mui/material';
@@ -32,6 +31,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import { useResponsive } from '@/hooks/useResponsive';
 
 const DRAWER_WIDTH = 280;
 
@@ -108,7 +108,7 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
   const { user } = useAuthStore();
   const pathname = usePathname();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { isMobile } = useResponsive();
 
   const getUserIcon = () => {
     switch(user?.role) {

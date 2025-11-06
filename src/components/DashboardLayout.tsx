@@ -7,12 +7,11 @@ import {
   Toolbar, 
   IconButton, 
   Typography, 
-  useMediaQuery, 
-  useTheme 
 } from '@mui/material';
 import { Menu as MenuIcon } from '@mui/icons-material';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,8 +20,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, title = 'Dashboard' }: DashboardLayoutProps) {
   const { dashboardMobileOpen, setDashboardMobileOpen, toggleDashboardMobile } = useNavigation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { isMobile } = useResponsive();
 
   const handleDrawerToggle = () => {
     toggleDashboardMobile();
