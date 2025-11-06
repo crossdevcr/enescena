@@ -1,0 +1,243 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { 
+  Box, 
+  Card, 
+  CardContent, 
+  TextField, 
+  Button, 
+  Typography, 
+  Alert,
+  Link,
+  Container,
+  InputAdornment,
+  IconButton
+} from "@mui/material";
+import { Visibility, VisibilityOff, Email, Lock } from "@mui/icons-material";
+import NextLink from "next/link";
+
+interface FormData {
+  email: string;
+  password: string;
+}
+
+interface FormErrors {
+  email?: string;
+  password?: string;
+  general?: string;
+}
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState<FormData>({
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = (field: keyof FormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: event.target.value
+    }));
+    
+    // Clear field-specific error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Redirect to dashboard based on user role
+        if (result.user?.role === "VENUE") {
+          router.push("/dashboard/venue");
+        } else {
+          router.push("/dashboard/artist");
+        }
+        router.refresh(); // Refresh to update auth state
+      } else {
+        if (result.errors) {
+          setErrors(result.errors);
+        } else {
+          setErrors({ general: result.message || "Sign in failed" });
+        }
+      }
+    } catch (error) {
+      console.error("Sign in error:", error);
+      setErrors({ general: "An unexpected error occurred. Please try again." });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Container maxWidth="sm">
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          py: 4
+        }}
+      >
+        <Card sx={{ width: "100%", maxWidth: 400 }}>
+          <CardContent sx={{ p: 4 }}>
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom
+              textAlign="center"
+              sx={{ mb: 3 }}
+            >
+              Sign In
+            </Typography>
+            
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              textAlign="center"
+              sx={{ mb: 4 }}
+            >
+              Welcome back! Please sign in to your account.
+            </Typography>
+
+            {errors.general && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {errors.general}
+              </Alert>
+            )}
+
+            <Box component="form" onSubmit={handleSubmit}>
+              <TextField
+                fullWidth
+                label="Email Address"
+                type="email"
+                value={formData.email}
+                onChange={handleChange("email")}
+                error={!!errors.email}
+                helperText={errors.email}
+                margin="normal"
+                required
+                autoComplete="email"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <TextField
+                fullWidth
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={handleChange("password")}
+                error={!!errors.password}
+                helperText={errors.password}
+                margin="normal"
+                required
+                autoComplete="current-password"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        aria-label="toggle password visibility"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={isLoading}
+                sx={{ mt: 3, mb: 2 }}
+              >
+                {isLoading ? "Signing In..." : "Sign In"}
+              </Button>
+            </Box>
+
+            <Box sx={{ textAlign: "center", mt: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Don't have an account?{" "}
+                <Link component={NextLink} href="/auth/signup" underline="hover">
+                  Sign up here
+                </Link>
+              </Typography>
+            </Box>
+
+            <Box sx={{ textAlign: "center", mt: 2 }}>
+              <Link 
+                component={NextLink} 
+                href="/auth/forgot-password" 
+                underline="hover"
+                variant="body2"
+                color="text.secondary"
+              >
+                Forgot your password?
+              </Link>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    </Container>
+  );
+}

@@ -34,6 +34,25 @@ export function setSessionOnResponse(
   return res;
 }
 
+export function setAuthTokens(
+  res: NextResponse,
+  tokens: {
+    idToken: string;
+    accessToken: string;
+    refreshToken?: string | null;
+  }
+) {
+  // Short-lived auth tokens
+  res.cookies.set(ID, tokens.idToken, short);
+  res.cookies.set(ACCESS, tokens.accessToken, short);
+
+  // Longer-lived refresh token (if provided)
+  if (tokens.refreshToken) {
+    res.cookies.set(REFRESH, tokens.refreshToken, long);
+  }
+  return res;
+}
+
 export function clearSessionOnResponse(res: NextResponse) {
   res.cookies.delete(ID);
   res.cookies.delete(ACCESS);

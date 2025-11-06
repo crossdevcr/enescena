@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { cognito } from "@/lib/auth/cognito";
 import { clearSessionOnResponse } from "@/lib/auth/cookies";
 
 export async function GET() {
-  const res = NextResponse.redirect(
-    `${cognito.logoutUrl}?${new URLSearchParams({
-      client_id: cognito.clientId,
-      logout_uri: cognito.signOutRedirectUri,
-    }).toString()}`
-  );
-  clearSessionOnResponse(res);
-  return res;
+  try {
+    // Clear authentication cookies and redirect to home
+    const response = NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_APP_URL!));
+    clearSessionOnResponse(response);
+    return response;
+  } catch (error) {
+    console.error("Logout error:", error);
+    // Fallback redirect to home even if there's an error
+    return NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_APP_URL!));
+  }
 }
