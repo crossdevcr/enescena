@@ -23,29 +23,61 @@ export default function NavBar() {
 
   if (isLoading) {
     return (
-      <AppBar position="static" color="primary">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+      <AppBar 
+        position="static"
+        sx={{ 
+          background: "linear-gradient(135deg, #1F2937 0%, #374151 100%)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)"
+        }}
+      >
+        <Toolbar sx={{ minHeight: 64 }}>
+          <Typography 
+            variant="h5" 
+            component={Link} 
+            href="/"
+            sx={{ 
+              flexGrow: 1, 
+              textDecoration: 'none', 
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: 700,
+              letterSpacing: '-0.025em',
+              '&:hover': {
+                color: 'primary.light',
+              }
+            }}
+          >
             Enescena
           </Typography>
-          <CircularProgress size={24} color="inherit" />
+          <CircularProgress size={24} sx={{ color: 'white' }} />
         </Toolbar>
       </AppBar>
     );
   }
 
   return (
-    <AppBar position="static" color="primary">
-      <Toolbar>
+    <AppBar 
+      position="static"
+      sx={{ 
+        background: "linear-gradient(135deg, #1F2937 0%, #374151 100%)",
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)"
+      }}
+    >
+      <Toolbar sx={{ minHeight: 64 }}>
         <Typography 
-          variant="h6" 
+          variant="h5" 
           component={Link} 
           href="/"
           sx={{ 
             flexGrow: 1, 
             textDecoration: 'none', 
-            color: 'inherit',
-            cursor: 'pointer'
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: 700,
+            letterSpacing: '-0.025em',
+            '&:hover': {
+              color: 'primary.light',
+            }
           }}
         >
           Enescena
@@ -61,28 +93,46 @@ export default function NavBar() {
                 variant="outlined"
                 sx={{ 
                   color: 'white', 
-                  borderColor: 'rgba(255,255,255,0.5)',
-                  '& .MuiChip-label': { color: 'white' }
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  '& .MuiChip-label': { 
+                    color: 'white',
+                    fontWeight: 500 
+                  }
                 }}
               />
               
               {/* Dashboard button */}
               <Button 
-                color="inherit" 
                 component={Link}
                 href="/dashboard"
                 startIcon={<DashboardIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  color: 'white',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: 'primary.light'
+                  }
+                }}
               >
                 Dashboard
               </Button>
 
               {/* Sign out button */}
               <Button 
-                color="inherit" 
                 onClick={signOut}
                 startIcon={<LogoutIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'error.main',
+                    color: 'white'
+                  }
+                }}
               >
                 Sign Out
               </Button>
@@ -91,21 +141,41 @@ export default function NavBar() {
             // Unauthenticated user navigation
             <>
               <Button 
-                color="inherit" 
+                variant="outlined"
                 component={Link}
                 href="/auth/signin"
                 startIcon={<LoginIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  color: 'white',
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderColor: 'white',
+                    color: 'white'
+                  }
+                }}
               >
                 Sign In
               </Button>
               
               <Button 
-                color="inherit" 
+                variant="contained"
                 component={Link}
                 href="/auth/signup"
                 startIcon={<PersonAddIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  backgroundColor: '#DC2626',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: '#B91C1C',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 6px 20px rgba(220, 38, 38, 0.4)'
+                  }
+                }}
               >
                 Sign Up
               </Button>

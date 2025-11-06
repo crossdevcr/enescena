@@ -88,8 +88,13 @@ export default async function EventDetailsPage({
   const canManage = isVenueOwner || isAdmin;
 
   return (
-    <Container sx={{ py: 6, maxWidth: 1200 }}>
-      <Stack spacing={3}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6, maxWidth: 1200 }}>
+        <Stack spacing={3}>
         <Stack direction="row" spacing={1} alignItems="center">
           <Button component={Link} href="/dashboard/venue/events" variant="outlined" size="small">
             ← Back to Events
@@ -317,5 +322,6 @@ export default async function EventDetailsPage({
         </Box>
       </Stack>
     </Container>
+    </Box>
   );
 }

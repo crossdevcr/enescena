@@ -1,4 +1,4 @@
-import { Container, Stack, Typography } from "@mui/material";
+import { Box, Container, Stack, Typography } from "@mui/material";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { redirect } from "next/navigation";
 import ArtistProfileForm from "./ArtistProfileForm";
@@ -13,8 +13,13 @@ export default async function ArtistProfilePage() {
   const a = user.artist;
 
   return (
-    <Container sx={{ py: 6, maxWidth: 720 }}>
-      <Stack spacing={3}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6, maxWidth: 720 }}>
+        <Stack spacing={3}>
         <Typography variant="h4" fontWeight={700}>Artist Profile</Typography>
 
         <ArtistProfileForm
@@ -28,5 +33,6 @@ export default async function ArtistProfilePage() {
         />
       </Stack>
     </Container>
+    </Box>
   );
 }
