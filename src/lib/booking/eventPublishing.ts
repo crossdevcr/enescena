@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Event, EventArtist, Artist } from "@prisma/client";
+import { Event, EventArtist, Artist, Booking } from "@prisma/client";
 import { sendEmail } from "@/lib/email/mailer";
 import { bookingCreatedForArtist } from "@/lib/email/templates";
 import { revalidatePath } from "next/cache";
@@ -10,6 +10,174 @@ interface EventWithArtists extends Event {
       user: { email: string; name: string } | null;
     };
   })[];
+}
+
+interface ArtistWithUser {
+  id: string;
+  name: string;
+  user: { email: string; name: string | null } | null;
+}
+
+interface BookingWithArtist extends Booking {
+  artist: ArtistWithUser | null;
+}
+
+/**
+ * Revalidates all relevant cache paths after booking/event changes
+ */
+function revalidateEventPaths(eventId: string): void {
+  try {
+    revalidatePath(`/dashboard/venue/events/${eventId}`);
+    revalidatePath(`/dashboard/venue/events`);
+    revalidatePath(`/dashboard/venue/bookings`);
+    revalidatePath(`/dashboard/artist/gigs`);
+  } catch (error) {
+    console.error("Failed to revalidate pages:", error);
+  }
+}
+
+/**
+ * Generates a unique booking ID
+ */
+function generateBookingId(): string {
+  return `b_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Sends booking creation email notification to an artist
+ */
+async function sendBookingCreatedEmail(
+  booking: BookingWithArtist,
+  venue: { name: string } | null,
+  event: { title: string | null; eventDate: Date; hours: number | null }
+): Promise<void> {
+  try {
+    const artistEmail = booking.artist?.user?.email;
+    if (!artistEmail || !booking.artist) {
+      console.log(`No email address found for artist ${booking.artist?.name || 'unknown'}`);
+      return;
+    }
+
+    const tmpl = bookingCreatedForArtist({
+      artistName: booking.artist.user?.name || booking.artist.name || "there",
+      venueName: venue?.name || "a venue",
+      eventISO: event.eventDate.toISOString(),
+      hours: event.hours ?? undefined,
+      bookingId: booking.id,
+    });
+    
+    const res = await sendEmail({ to: artistEmail, ...tmpl });
+    if (!res.ok) {
+      console.error(`[email] Failed to send booking creation email to ${artistEmail} for booking ${booking.id}`);
+    } else {
+      console.log(`Email notification sent to ${booking.artist.name} for event ${event.title}`);
+    }
+  } catch (error) {
+    console.error(`Failed to send email notification to artist ${booking.artist?.name || 'unknown'}:`, error);
+  }
+}
+
+/**
+ * Sends event cancellation email notification to an artist
+ */
+async function sendEventCancelledEmail(
+  booking: BookingWithArtist,
+  eventTitle: string | null,
+  venueName: string | null
+): Promise<void> {
+  try {
+    const artistEmail = booking.artist?.user?.email;
+    if (!artistEmail || !booking.artist) {
+      return;
+    }
+
+    const { eventCancelledForArtist } = await import("@/lib/email/templates");
+    const tmpl = eventCancelledForArtist({
+      artistName: booking.artist.name || "there",
+      venueName: venueName || "the venue",
+      eventTitle: eventTitle || "the event",
+      bookingId: booking.id,
+    });
+    
+    const res = await sendEmail({ to: artistEmail, ...tmpl });
+    if (!res.ok) {
+      console.error(`[email] Failed to send event cancellation email to ${artistEmail} for booking ${booking.id}`);
+    } else {
+      console.log(`Sent event cancellation email to ${artistEmail} for booking ${booking.id}`);
+    }
+  } catch (error) {
+    console.error(`[email] Error sending event cancellation email for booking ${booking.id}:`, error);
+  }
+}
+
+/**
+ * Creates a single booking request for an artist and event
+ */
+async function createSingleBooking(
+  eventId: string,
+  artistId: string,
+  event: { id: string; title: string | null; eventDate: Date; hours: number | null; venueId: string },
+  artist: ArtistWithUser,
+  venue: { name: string } | null,
+  includeArtistInResponse: boolean = true
+): Promise<void> {
+  // Check if booking request already exists
+  const existingBooking = await prisma.booking.findFirst({
+    where: {
+      artistId: artistId,
+      eventId: event.id
+    }
+  });
+
+  if (existingBooking) {
+    console.log(`Booking request already exists for artist ${artist.name} for event ${event.title}`);
+    return;
+  }
+
+  // Create booking request
+  const bookingId = generateBookingId();
+  
+  const bookingData = {
+    data: {
+      id: bookingId,
+      eventDate: event.eventDate,
+      hours: event.hours,
+      note: `Booking request for event: ${event.title}`,
+      status: "PENDING" as const,
+      venueId: event.venueId,
+      artistId: artistId,
+      eventId: event.id
+    },
+    ...(includeArtistInResponse && {
+      include: {
+        artist: {
+          select: {
+            name: true,
+            user: { select: { email: true, name: true } }
+          }
+        }
+      }
+    })
+  };
+
+  const booking = await prisma.booking.create(bookingData) as BookingWithArtist;
+
+  console.log(`Created booking request for artist ${artist.name} for event ${event.title}`);
+
+  // Send email notification (async, don't block)  
+  // Create booking object with artist info for email if not included in response
+  const bookingForEmail = includeArtistInResponse 
+    ? booking 
+    : { 
+        ...booking, 
+        artist: { 
+          id: artist.id, 
+          name: artist.name, 
+          user: artist.user 
+        } 
+      } as BookingWithArtist;
+      
+  setImmediate(() => sendBookingCreatedEmail(bookingForEmail, venue, event));
 }
 
 /**
@@ -44,7 +212,6 @@ export async function createBookingRequestsForEvent(eventId: string): Promise<vo
     throw new Error("Event must be published to create booking requests");
   }
 
-  // Check if we have all required event data
   if (!event.eventDate) {
     throw new Error("Event must have an event date to create booking requests");
   }
@@ -55,67 +222,15 @@ export async function createBookingRequestsForEvent(eventId: string): Promise<vo
     select: { name: true }
   });
 
-  // Create booking requests for each artist that doesn't already have one
+  // Create booking requests for each artist using the shared function
   for (const eventArtist of event.eventArtists) {
-    // Check if booking request already exists for this artist and event
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        artistId: eventArtist.artistId,
-        eventId: event.id
-      }
-    });
-
-    if (!existingBooking) {
-      // Create a booking request
-      const bookingId = `b_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      
-      const booking = await prisma.booking.create({
-        data: {
-          id: bookingId,
-          eventDate: event.eventDate,
-          hours: event.hours,
-          note: `Booking request for event: ${event.title}`,
-          status: "PENDING",
-          venueId: event.venueId,
-          artistId: eventArtist.artistId,
-          eventId: event.id
-        },
-        include: {
-          artist: {
-            select: {
-              name: true,
-              user: { select: { email: true, name: true } }
-            }
-          }
-        }
-      });
-
-      console.log(`Created booking request for artist ${eventArtist.artist.name} for event ${event.title}`);
-
-      // Send email notification to artist (async, don't block)
-      (async () => {
-        try {
-          const artistEmail = booking.artist?.user?.email;
-          if (artistEmail) {
-            const tmpl = bookingCreatedForArtist({
-              artistName: booking.artist.user?.name || booking.artist.name || "there",
-              venueName: venue?.name || "a venue",
-              eventISO: booking.eventDate.toISOString(),
-              hours: booking.hours ?? undefined,
-              bookingId: booking.id,
-            });
-            await sendEmail({ to: artistEmail, ...tmpl });
-            console.log(`Email notification sent to ${booking.artist.name} for event ${event.title}`);
-          } else {
-            console.log(`No email address found for artist ${booking.artist.name}`);
-          }
-        } catch (error) {
-          console.error(`Failed to send email notification to artist ${booking.artist.name}:`, error);
-        }
-      })();
-    } else {
-      console.log(`Booking request already exists for artist ${eventArtist.artist.name} for event ${event.title}`);
-    }
+    await createSingleBooking(
+      eventId,
+      eventArtist.artistId,
+      event,
+      eventArtist.artist,
+      venue
+    );
   }
 }
 
@@ -147,11 +262,11 @@ export async function cancelBookingRequestsForEvent(eventId: string): Promise<vo
         select: { 
           id: true, 
           name: true,
-          user: { select: { email: true } }
+          user: { select: { email: true, name: true } }
         } 
       }
     }
-  });
+  }) as BookingWithArtist[];
 
   if (bookingsToCancel.length === 0) {
     console.log(`No bookings to cancel for event ${eventId}`);
@@ -178,42 +293,14 @@ export async function cancelBookingRequestsForEvent(eventId: string): Promise<vo
   console.log(`Cancelled ${bookingsToCancel.length} booking requests for event ${eventId}`);
 
   // Revalidate relevant pages to update the UI
-  try {
-    revalidatePath(`/dashboard/venue/events/${eventId}`);
-    revalidatePath(`/dashboard/venue/events`);
-    revalidatePath(`/dashboard/venue/bookings`);
-    revalidatePath(`/dashboard/artist/gigs`);
-  } catch (error) {
-    console.error("Failed to revalidate pages after event cancellation:", error);
-  }
+  revalidateEventPaths(eventId);
 
   // Send email notifications to all affected artists (async, don't block)
-  (async () => {
-    const { eventCancelledForArtist } = await import("@/lib/email/templates");
-    const { sendEmail } = await import("@/lib/email/mailer");
-
+  setImmediate(async () => {
     for (const booking of bookingsToCancel) {
-      try {
-        const artistEmail = booking.artist?.user?.email;
-        if (artistEmail) {
-          const tmpl = eventCancelledForArtist({
-            artistName: booking.artist?.name || "there",
-            venueName: event.venue?.name || "the venue",
-            eventTitle: event.title || "the event",
-            bookingId: booking.id,
-          });
-          const res = await sendEmail({ to: artistEmail, ...tmpl });
-          if (!res.ok) {
-            console.error(`[email] Failed to send event cancellation email to ${artistEmail} for booking ${booking.id}`);
-          } else {
-            console.log(`Sent event cancellation email to ${artistEmail} for booking ${booking.id}`);
-          }
-        }
-      } catch (error) {
-        console.error(`[email] Error sending event cancellation email for booking ${booking.id}:`, error);
-      }
+      await sendEventCancelledEmail(booking, event.title, event.venue?.name || null);
     }
-  })();
+  });
 }
 
 /**
@@ -265,68 +352,9 @@ export async function createBookingRequestForArtist(eventId: string, artistId: s
     select: { name: true }
   });
 
-  // Check if booking request already exists for this artist and event
-  const existingBooking = await prisma.booking.findFirst({
-    where: {
-      artistId: artistId,
-      eventId: event.id
-    }
-  });
-
-  if (existingBooking) {
-    console.log(`Booking already exists for artist ${artistId} in event ${eventId}`);
-    return;
-  }
-
-  // Create a booking request
-  const bookingId = `b_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  
-  const booking = await prisma.booking.create({
-    data: {
-      id: bookingId,
-      eventDate: event.eventDate,
-      hours: event.hours,
-      note: `Booking request for event: ${event.title}`,
-      status: "PENDING",
-      venueId: event.venueId,
-      artistId: artistId,
-      eventId: event.id
-    }
-  });
-
-  console.log(`Created booking request ${bookingId} for artist ${artist.name} for event ${event.title}`);
+  // Create booking using the shared function (without artist include for this case)
+  await createSingleBooking(eventId, artistId, event, artist, venue, false);
 
   // Revalidate relevant pages to update the UI
-  try {
-    revalidatePath(`/dashboard/venue/events/${eventId}`);
-    revalidatePath(`/dashboard/venue/events`);
-    revalidatePath(`/dashboard/venue/bookings`);
-    revalidatePath(`/dashboard/artist/gigs`);
-  } catch (error) {
-    console.error("Failed to revalidate pages after booking creation:", error);
-  }
-
-  // Send email notification to artist (async, don't block)
-  (async () => {
-    try {
-      const artistEmail = artist.user?.email;
-      if (artistEmail) {
-        const tmpl = bookingCreatedForArtist({
-          artistName: artist.user?.name || artist.name || "there",
-          venueName: venue?.name || "a venue",
-          eventISO: event.eventDate.toISOString(),
-          hours: event.hours ?? undefined,
-          bookingId: booking.id,
-        });
-        const res = await sendEmail({ to: artistEmail, ...tmpl });
-        if (!res.ok) {
-          console.error(`[email] Failed to send booking creation email to ${artistEmail} for booking ${booking.id}`);
-        } else {
-          console.log(`Sent booking creation email to ${artistEmail} for booking ${booking.id}`);
-        }
-      }
-    } catch (error) {
-      console.error(`[email] Error sending booking creation email for booking ${booking.id}:`, error);
-    }
-  })();
+  revalidateEventPaths(eventId);
 }
