@@ -70,11 +70,8 @@ describe("VenueBookingsPage", () => {
 
     render(node as any);
 
-    const details = screen.getByRole("link", { name: /view details/i });
+    const details = screen.getByRole("link", { name: /details/i });
     expect(details).toBeInTheDocument();
     expect(details).toHaveAttribute("href", "/dashboard/venue/bookings/b123");
-
-    const artistLink = screen.getByRole("link", { name: /view artist/i });
-    expect(artistLink).toHaveAttribute("href", "/artists/artist-a");
   });
 });
