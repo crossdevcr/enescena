@@ -168,27 +168,7 @@ export default async function DashboardPage() {
               </Stack>
             )}
 
-            <Button
-              variant="text"
-              size="small"
-              sx={{ mt: 2 }}
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/auth/signout', {
-                    method: 'POST',
-                  });
-                  
-                  if (response.ok) {
-                    window.location.href = '/auth/signin';
-                  }
-                } catch (error) {
-                  console.error('Logout error:', error);
-                  window.location.href = '/auth/signin';
-                }
-              }}
-            >
-              Sign out
-            </Button>
+
           </>
         )}
       </Stack>
