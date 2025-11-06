@@ -268,6 +268,7 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
         anchor="left"
         open={mobileOpen}
         onClose={onMobileClose}
+        aria-label="Dashboard navigation menu"
         ModalProps={{
           keepMounted: true, // Better open performance on mobile
         }}

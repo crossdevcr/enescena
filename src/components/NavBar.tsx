@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   AppBar, 
   Toolbar, 
@@ -19,7 +20,8 @@ import {
   ListItemText,
   useMediaQuery,
   useTheme,
-  Divider
+  Divider,
+  Skeleton
 } from "@mui/material";
 import { 
   Login as LoginIcon, 
@@ -39,12 +41,42 @@ import { useAuthStore } from "@/stores/authStore";
 export default function NavBar() {
   const { user, isAuthenticated, isLoading, signOut } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const router = useRouter();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+      await signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      // In a real app, you might want to show a toast notification here
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  // Handle keyboard events for accessibility
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && mobileOpen) {
+        setMobileOpen(false);
+      }
+    };
+
+    if (mobileOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [mobileOpen]);
 
   // Navigation items for authenticated users
   const getNavigationItems = () => {
@@ -196,10 +228,11 @@ export default function NavBar() {
             
             <ListItem disablePadding>
               <ListItemButton 
-                onClick={() => {
-                  signOut();
+                onClick={async () => {
                   handleDrawerToggle();
+                  await handleSignOut();
                 }}
+                disabled={isSigningOut}
                 sx={{ 
                   color: 'error.main',
                   minHeight: 48,
@@ -212,6 +245,9 @@ export default function NavBar() {
                     backgroundColor: 'error.main',
                     color: 'white',
                     transform: 'translateX(4px)'
+                  },
+                  '&:disabled': {
+                    color: 'rgba(211, 47, 47, 0.5)',
                   }
                 }}
               >
@@ -219,9 +255,9 @@ export default function NavBar() {
                   color: 'inherit',
                   transition: 'color 0.2s ease-in-out'
                 }}>
-                  <LogoutIcon />
+                  {isSigningOut ? <CircularProgress size={20} color="inherit" /> : <LogoutIcon />}
                 </ListItemIcon>
-                <ListItemText primary="Sign Out" />
+                <ListItemText primary={isSigningOut ? "Signing out..." : "Sign Out"} />
               </ListItemButton>
             </ListItem>
           </>
@@ -279,6 +315,9 @@ export default function NavBar() {
             <IconButton
               edge="start"
               onClick={handleDrawerToggle}
+              aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-navigation-menu"
               sx={{ 
                 mr: 2, 
                 color: 'white',
@@ -324,56 +363,102 @@ export default function NavBar() {
                 // Authenticated user navigation
                 <>
                   {/* User info chip */}
-                  {user && (user.name || user.email) && (
+                  {isLoading ? (
+                    <Skeleton 
+                      variant="rectangular" 
+                      width={isTablet ? 80 : 180} 
+                      height={isTablet ? 24 : 32}
+                      sx={{ 
+                        borderRadius: 4,
+                        bgcolor: 'rgba(255, 255, 255, 0.1)'
+                      }}
+                    />
+                  ) : user && (user.name || user.email) && (
                     <Chip 
-                      label={`${user.name || user.email} (${user.role || 'User'})`}
+                      label={isTablet ? user.role || 'User' : `${user.name || user.email} (${user.role || 'User'})`}
                       variant="outlined"
+                      size={isTablet ? "small" : "medium"}
                       sx={{ 
                         color: 'white', 
                         borderColor: 'rgba(255, 255, 255, 0.3)',
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         '& .MuiChip-label': { 
                           color: 'white',
-                          fontWeight: 500 
+                          fontWeight: 500,
+                          textTransform: 'capitalize'
                         }
                       }}
                     />
                   )}
                   
                   {/* Dashboard button */}
-                  <Button 
-                    component={Link}
-                    href="/dashboard"
-                    startIcon={<DashboardIcon />}
-                    sx={{ 
-                      textTransform: 'none',
-                      color: 'white',
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        color: 'primary.light'
-                      }
-                    }}
-                  >
-                    Dashboard
-                  </Button>
+                  {isLoading ? (
+                    <Skeleton 
+                      variant="rectangular" 
+                      width={isTablet ? 44 : 120} 
+                      height={44}
+                      sx={{ 
+                        borderRadius: 1,
+                        bgcolor: 'rgba(255, 255, 255, 0.1)'
+                      }}
+                    />
+                  ) : (
+                    <Button 
+                      component={Link}
+                      href="/dashboard"
+                      startIcon={<DashboardIcon />}
+                      size={isTablet ? "small" : "medium"}
+                      sx={{ 
+                        textTransform: 'none',
+                        color: 'white',
+                        fontWeight: 600,
+                        px: isTablet ? 2 : 3,
+                        minHeight: 44,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          color: 'primary.light'
+                        }
+                      }}
+                    >
+                      {isTablet ? '' : 'Dashboard'}
+                    </Button>
+                  )}
 
                   {/* Sign out button */}
-                  <Button 
-                    onClick={signOut}
-                    startIcon={<LogoutIcon />}
-                    sx={{ 
-                      textTransform: 'none',
-                      color: 'rgba(255, 255, 255, 0.7)',
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: 'error.main',
-                        color: 'white'
-                      }
-                    }}
-                  >
-                    Sign Out
-                  </Button>
+                  {isLoading ? (
+                    <Skeleton 
+                      variant="rectangular" 
+                      width={isTablet ? 44 : 100} 
+                      height={44}
+                      sx={{ 
+                        borderRadius: 1,
+                        bgcolor: 'rgba(255, 255, 255, 0.1)'
+                      }}
+                    />
+                  ) : (
+                    <Button 
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      startIcon={isSigningOut ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <LogoutIcon />}
+                      size={isTablet ? "small" : "medium"}
+                      sx={{ 
+                        textTransform: 'none',
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontWeight: 600,
+                        px: isTablet ? 2 : 3,
+                        minHeight: 44,
+                        '&:hover': {
+                          backgroundColor: 'error.main',
+                          color: 'white'
+                        },
+                        '&:disabled': {
+                          color: 'rgba(255, 255, 255, 0.5)',
+                        }
+                      }}
+                    >
+                      {isTablet ? '' : (isSigningOut ? 'Signing out...' : 'Sign Out')}
+                    </Button>
+                  )}
                 </>
               ) : (
                 // Unauthenticated user navigation
@@ -383,11 +468,14 @@ export default function NavBar() {
                     component={Link}
                     href="/auth/signin"
                     startIcon={<LoginIcon />}
+                    size={isTablet ? "small" : "medium"}
                     sx={{ 
                       textTransform: 'none',
                       color: 'white',
                       borderColor: 'rgba(255, 255, 255, 0.3)',
                       fontWeight: 600,
+                      px: isTablet ? 2 : 3,
+                      minHeight: 44,
                       '&:hover': {
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         borderColor: 'white',
@@ -395,7 +483,7 @@ export default function NavBar() {
                       }
                     }}
                   >
-                    Sign In
+                    {isTablet ? '' : 'Sign In'}
                   </Button>
                   
                   <Button 
@@ -403,11 +491,14 @@ export default function NavBar() {
                     component={Link}
                     href="/auth/signup"
                     startIcon={<PersonAddIcon />}
+                    size={isTablet ? "small" : "medium"}
                     sx={{ 
                       textTransform: 'none',
                       fontWeight: 600,
                       backgroundColor: '#DC2626',
                       color: 'white',
+                      px: isTablet ? 2 : 3,
+                      minHeight: 44,
                       '&:hover': {
                         backgroundColor: '#B91C1C',
                         transform: 'translateY(-1px)',
@@ -415,7 +506,7 @@ export default function NavBar() {
                       }
                     }}
                   >
-                    Sign Up
+                    {isTablet ? '' : 'Sign Up'}
                   </Button>
                 </>
               )}
@@ -426,10 +517,12 @@ export default function NavBar() {
 
       {/* Mobile drawer */}
       <Drawer
+        id="mobile-navigation-menu"
         variant="temporary"
         anchor="left"
         open={mobileOpen}
         onClose={handleDrawerToggle}
+        aria-label="Main navigation menu"
         ModalProps={{
           keepMounted: true, // Better open performance on mobile.
         }}

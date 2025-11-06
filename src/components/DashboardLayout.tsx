@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect, useRef } from 'react';
 import { 
   Box, 
   AppBar, 
@@ -26,6 +26,20 @@ export default function DashboardLayout({ children, title = 'Dashboard' }: Dashb
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  // Handle keyboard events for accessibility
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && mobileOpen) {
+        setMobileOpen(false);
+      }
+    };
+
+    if (mobileOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [mobileOpen]);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -57,7 +71,12 @@ export default function DashboardLayout({ children, title = 'Dashboard' }: Dashb
               <IconButton
                 edge="start"
                 onClick={handleDrawerToggle}
-                sx={{ mr: 2 }}
+                aria-label="Open dashboard navigation menu"
+                sx={{ 
+                  mr: 2,
+                  minWidth: 44,
+                  minHeight: 44
+                }}
               >
                 <MenuIcon />
               </IconButton>
