@@ -3,7 +3,6 @@ import ThemeRegistry from "./theme-registry";
 import NavBar from "@/components/NavBar";
 import QueryProvider from "@/providers/QueryProvider";
 import AuthInitializer from "@/components/AuthInitializer";
-import { NavigationProvider } from "@/contexts/NavigationContext";
 
 export const metadata: Metadata = {
   title: "Enescena",
@@ -17,18 +16,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{
           margin: 0,
           padding: 0,
-          background: "linear-gradient(135deg, #000000 0%, #262626 50%, #404040 100%)",
+          background: "linear-gradient(135deg, #1F2937 0%, #374151 50%, #4B5563 100%)",
           minHeight: "100vh"
         }}
       >
         <QueryProvider>
           <AuthInitializer>
-            <NavigationProvider>
-              <ThemeRegistry>
-                <NavBar />
-                {children}
-              </ThemeRegistry>
-            </NavigationProvider>
+            <NavBar />
+            <ThemeRegistry>{children}</ThemeRegistry>
           </AuthInitializer>
         </QueryProvider>
       </body>

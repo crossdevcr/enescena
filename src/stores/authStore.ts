@@ -60,14 +60,11 @@ export const useAuthStore = create<AuthState>()(
             if (response.ok) {
               const responseData = await response.json();
               get().setUser(responseData.user);
-            } else if (response.status === 401) {
-              get().setUser(null);
             } else {
-              console.error('Auth check failed:', response.status, response.statusText);
               get().setUser(null);
             }
           } catch (error) {
-            console.error('Auth check network error:', error);
+            console.error('Auth check error:', error);
             get().setUser(null);
           } finally {
             set({ isLoading: false }, false, 'checkAuth/end');
