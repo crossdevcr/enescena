@@ -14,7 +14,11 @@ vi.mock("@/lib/prisma", () => ({
     },
     booking: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
+      updateMany: vi.fn()
+    },
+    eventArtist: {
       updateMany: vi.fn()
     }
   }
@@ -22,6 +26,10 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/email/mailer", () => ({
   sendEmail: vi.fn()
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn()
 }));
 
 const mockPrisma = prisma as any;
@@ -284,18 +292,69 @@ describe("Event Publishing", () => {
   });
 
   describe("cancelBookingRequestsForEvent", () => {
-    it("should cancel all pending bookings for an event", async () => {
+    it("should cancel all pending and accepted bookings for an event", async () => {
+      // Mock event
+      mockPrisma.event.findUnique.mockResolvedValue({
+        id: "event-1",
+        title: "Test Event",
+        venue: { name: "Test Venue" }
+      });
+
+      // Mock bookings to cancel
+      mockPrisma.booking.findMany.mockResolvedValue([
+        {
+          id: "booking-1",
+          artist: { 
+            id: "artist-1", 
+            name: "Artist One",
+            user: { email: "artist1@test.com" }
+          }
+        }
+      ]);
+
       await cancelBookingRequestsForEvent("event-1");
 
+      // Should cancel both PENDING and ACCEPTED bookings
       expect(mockPrisma.booking.updateMany).toHaveBeenCalledWith({
         where: {
           eventId: "event-1",
-          status: "PENDING"
+          status: { in: ["PENDING", "ACCEPTED"] }
         },
         data: {
           status: "CANCELLED"
         }
       });
+
+      // Should reset EventArtist confirmation
+      expect(mockPrisma.eventArtist.updateMany).toHaveBeenCalledWith({
+        where: { eventId: "event-1" },
+        data: { confirmed: false }
+      });
+    });
+
+    it("should handle case when no bookings exist", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue({
+        id: "event-1",
+        title: "Test Event",
+        venue: { name: "Test Venue" }
+      });
+
+      mockPrisma.booking.findMany.mockResolvedValue([]);
+
+      await cancelBookingRequestsForEvent("event-1");
+
+      // Should still query but not update anything
+      expect(mockPrisma.booking.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("should handle case when event does not exist", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue(null);
+
+      await cancelBookingRequestsForEvent("nonexistent-event");
+
+      // Should not attempt any updates
+      expect(mockPrisma.booking.updateMany).not.toHaveBeenCalled();
+      expect(mockPrisma.eventArtist.updateMany).not.toHaveBeenCalled();
     });
   });
 });

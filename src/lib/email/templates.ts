@@ -87,3 +87,25 @@ export function bookingCancelledForArtist(params: {
     text: `The venue ${params.venueName} canceled the booking. Details: ${link}`,
   };
 }
+
+export function eventCancelledForArtist(params: {
+  artistName: string;
+  venueName: string;
+  eventTitle: string;
+  bookingId: string;
+}) {
+  const link = `${base}/dashboard/artist/gigs/${params.bookingId}`;
+  return {
+    subject: `Event "${params.eventTitle}" has been cancelled`,
+    html: `
+      <h2>Event cancelled</h2>
+      <p>Hi ${params.artistName},</p>
+      <p>The venue <b>${params.venueName}</b> has cancelled the event "<b>${params.eventTitle}</b>".</p>
+      <p>Your booking for this event has been automatically cancelled.</p>
+      <p><a href="${link}">View booking details</a></p>
+      <hr/>
+      <p>Enescena</p>
+    `,
+    text: `The event "${params.eventTitle}" at ${params.venueName} has been cancelled. Your booking has been automatically cancelled. Details: ${link}`,
+  };
+}

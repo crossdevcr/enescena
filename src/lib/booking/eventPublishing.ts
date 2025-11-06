@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Event, EventArtist, Artist } from "@prisma/client";
 import { sendEmail } from "@/lib/email/mailer";
 import { bookingCreatedForArtist } from "@/lib/email/templates";
+import { revalidatePath } from "next/cache";
 
 interface EventWithArtists extends Event {
   eventArtists: (EventArtist & {
@@ -119,19 +120,98 @@ export async function createBookingRequestsForEvent(eventId: string): Promise<vo
 }
 
 /**
- * Cancels all pending booking requests for an event when it's unpublished or cancelled
+ * Cancels all pending and accepted booking requests for an event when it's unpublished or cancelled
  */
 export async function cancelBookingRequestsForEvent(eventId: string): Promise<void> {
-  // Cancel all pending bookings for this event
+  // Get event details for email notifications
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: {
+      venue: { select: { name: true } }
+    }
+  });
+
+  if (!event) {
+    console.error(`Event ${eventId} not found when trying to cancel bookings`);
+    return;
+  }
+
+  // Get all bookings that need to be cancelled (PENDING and ACCEPTED)
+  const bookingsToCancel = await prisma.booking.findMany({
+    where: {
+      eventId: eventId,
+      status: { in: ["PENDING", "ACCEPTED"] }
+    },
+    include: {
+      artist: { 
+        select: { 
+          id: true, 
+          name: true,
+          user: { select: { email: true } }
+        } 
+      }
+    }
+  });
+
+  if (bookingsToCancel.length === 0) {
+    console.log(`No bookings to cancel for event ${eventId}`);
+    return;
+  }
+
+  // Cancel all pending and accepted bookings for this event
   await prisma.booking.updateMany({
     where: {
       eventId: eventId,
-      status: "PENDING"
+      status: { in: ["PENDING", "ACCEPTED"] }
     },
     data: {
       status: "CANCELLED"
     }
   });
 
-  console.log(`Cancelled pending booking requests for event ${eventId}`);
+  // Reset EventArtist confirmation status for all artists
+  await prisma.eventArtist.updateMany({
+    where: { eventId: eventId },
+    data: { confirmed: false }
+  });
+
+  console.log(`Cancelled ${bookingsToCancel.length} booking requests for event ${eventId}`);
+
+  // Revalidate relevant pages to update the UI
+  try {
+    revalidatePath(`/dashboard/venue/events/${eventId}`);
+    revalidatePath(`/dashboard/venue/events`);
+    revalidatePath(`/dashboard/venue/bookings`);
+    revalidatePath(`/dashboard/artist/gigs`);
+  } catch (error) {
+    console.error("Failed to revalidate pages after event cancellation:", error);
+  }
+
+  // Send email notifications to all affected artists (async, don't block)
+  (async () => {
+    const { eventCancelledForArtist } = await import("@/lib/email/templates");
+    const { sendEmail } = await import("@/lib/email/mailer");
+
+    for (const booking of bookingsToCancel) {
+      try {
+        const artistEmail = booking.artist?.user?.email;
+        if (artistEmail) {
+          const tmpl = eventCancelledForArtist({
+            artistName: booking.artist?.name || "there",
+            venueName: event.venue?.name || "the venue",
+            eventTitle: event.title || "the event",
+            bookingId: booking.id,
+          });
+          const res = await sendEmail({ to: artistEmail, ...tmpl });
+          if (!res.ok) {
+            console.error(`[email] Failed to send event cancellation email to ${artistEmail} for booking ${booking.id}`);
+          } else {
+            console.log(`Sent event cancellation email to ${artistEmail} for booking ${booking.id}`);
+          }
+        }
+      } catch (error) {
+        console.error(`[email] Error sending event cancellation email for booking ${booking.id}:`, error);
+      }
+    }
+  })();
 }
