@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { 
   Box, 
   AppBar, 
@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { Menu as MenuIcon } from '@mui/icons-material';
 import DashboardSidebar from '@/components/DashboardSidebar';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -19,33 +20,33 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, title = 'Dashboard' }: DashboardLayoutProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { dashboardMobileOpen, setDashboardMobileOpen, toggleDashboardMobile } = useNavigation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+    toggleDashboardMobile();
   };
 
   // Handle keyboard events for accessibility
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && mobileOpen) {
-        setMobileOpen(false);
+      if (event.key === 'Escape' && dashboardMobileOpen) {
+        setDashboardMobileOpen(false);
       }
     };
 
-    if (mobileOpen) {
+    if (dashboardMobileOpen) {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [mobileOpen]);
+  }, [dashboardMobileOpen, setDashboardMobileOpen]);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
       <DashboardSidebar 
-        mobileOpen={mobileOpen} 
+        mobileOpen={dashboardMobileOpen} 
         onMobileClose={handleDrawerToggle} 
       />
       
@@ -56,36 +57,7 @@ export default function DashboardLayout({ children, title = 'Dashboard' }: Dashb
         flexDirection: 'column',
         width: { md: `calc(100% - 280px)` }
       }}>
-        {/* Mobile App Bar */}
-        {isMobile && (
-          <AppBar 
-            position="sticky" 
-            elevation={0}
-            sx={{ 
-              backgroundColor: 'white',
-              borderBottom: '1px solid #e0e0e0',
-              color: 'text.primary'
-            }}
-          >
-            <Toolbar sx={{ minHeight: '56px !important' }}>
-              <IconButton
-                edge="start"
-                onClick={handleDrawerToggle}
-                aria-label="Open dashboard navigation menu"
-                sx={{ 
-                  mr: 2,
-                  minWidth: 44,
-                  minHeight: 44
-                }}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="h6" fontWeight={600}>
-                {title}
-              </Typography>
-            </Toolbar>
-          </AppBar>
-        )}
+        {/* No mobile app bar needed - main NavBar handles this */}
         
         {/* Page Content */}
         <Box sx={{ 

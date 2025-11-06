@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { 
   AppBar, 
   Toolbar, 
@@ -37,18 +38,27 @@ import {
   MusicNote as MusicIcon
 } from "@mui/icons-material";
 import { useAuthStore } from "@/stores/authStore";
+import { useNavigation } from "@/contexts/NavigationContext";
 
 export default function NavBar() {
   const { user, isAuthenticated, isLoading, signOut } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const { dashboardMobileOpen, toggleDashboardMobile } = useNavigation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   const router = useRouter();
+  const pathname = usePathname();
+  
+  const isDashboardPage = pathname.startsWith('/dashboard');
 
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+    if (isDashboardPage && isAuthenticated) {
+      toggleDashboardMobile();
+    } else {
+      setMobileOpen(!mobileOpen);
+    }
   };
 
   const handleSignOut = async () => {
@@ -67,16 +77,20 @@ export default function NavBar() {
   // Handle keyboard events for accessibility
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && mobileOpen) {
-        setMobileOpen(false);
+      if (event.key === 'Escape') {
+        if (isDashboardPage && isAuthenticated && dashboardMobileOpen) {
+          toggleDashboardMobile();
+        } else if (mobileOpen) {
+          setMobileOpen(false);
+        }
       }
     };
 
-    if (mobileOpen) {
+    if (mobileOpen || (isDashboardPage && isAuthenticated && dashboardMobileOpen)) {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [mobileOpen]);
+  }, [mobileOpen, dashboardMobileOpen, isDashboardPage, isAuthenticated, toggleDashboardMobile]);
 
   // Navigation items for authenticated users
   const getNavigationItems = () => {
@@ -315,9 +329,13 @@ export default function NavBar() {
             <IconButton
               edge="start"
               onClick={handleDrawerToggle}
-              aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
-              aria-expanded={mobileOpen}
-              aria-controls="mobile-navigation-menu"
+              aria-label={
+                isDashboardPage && isAuthenticated 
+                  ? (dashboardMobileOpen ? "Close dashboard menu" : "Open dashboard menu")
+                  : (mobileOpen ? "Close navigation menu" : "Open navigation menu")
+              }
+              aria-expanded={isDashboardPage && isAuthenticated ? dashboardMobileOpen : mobileOpen}
+              aria-controls={isDashboardPage && isAuthenticated ? "dashboard-navigation-menu" : "mobile-navigation-menu"}
               sx={{ 
                 mr: 2, 
                 color: 'white',

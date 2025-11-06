@@ -264,6 +264,7 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
     >
       {/* Mobile drawer */}
       <Drawer
+        id="dashboard-navigation-menu"
         variant="temporary"
         anchor="left"
         open={mobileOpen}
