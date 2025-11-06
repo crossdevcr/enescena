@@ -134,38 +134,18 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
 
   const drawerContent = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
-      <Box sx={{ 
-        p: 3,
-        background: 'linear-gradient(135deg, #000000 0%, #262626 100%)',
-        color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            backgroundColor: getRoleColor(),
-            color: 'white'
-          }}>
-            {getUserIcon()}
-          </Box>
-          <Box>
-            <Typography variant="h6" fontWeight={600} sx={{ lineHeight: 1.2 }}>
-              ENESCENA
+      {isMobile && (
+        <Box sx={{ 
+          p: 3,
+          background: 'linear-gradient(135deg, #000000 0%, #262626 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
+            Menu
             </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.8 }}>
-              Dashboard
-            </Typography>
-          </Box>
-        </Box>
-        {isMobile && (
           <IconButton 
             onClick={onMobileClose}
             sx={{ color: 'white' }}
@@ -173,8 +153,8 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
           >
             <ChevronLeftIcon />
           </IconButton>
-        )}
-      </Box>
+        </Box>
+      )}
 
       {/* User Info */}
       {user && (
