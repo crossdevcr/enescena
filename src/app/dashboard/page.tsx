@@ -3,6 +3,7 @@ import { getTokens } from "@/lib/auth/cookies";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { Container, Stack, Typography, Button } from "@mui/material";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,11 @@ export default async function DashboardPage() {
       })
     : null;
 
+  // Redirect to sign-in if not authenticated
+  if (!user) {
+    redirect("/auth/signin");
+  }
+
   return (
     <Container sx={{ py: 6 }}>
       <Stack spacing={2}>
@@ -26,22 +32,7 @@ export default async function DashboardPage() {
           Dashboard
         </Typography>
 
-        {!user && (
-          <>
-            <Typography>You are not signed in.</Typography>
-            <Button
-              component={Link}
-              href="/api/auth/login"
-              variant="contained"
-              size="small"
-            >
-              Sign in
-            </Button>
-          </>
-        )}
-
-        {user && (
-          <>
+        <>
             <Typography variant="body1">
               Welcome
               {user.name ? `, ${user.name}` : user.email ? `, ${user.email}` : ""}!
@@ -168,9 +159,7 @@ export default async function DashboardPage() {
               </Stack>
             )}
 
-
-          </>
-        )}
+        </>
       </Stack>
     </Container>
   );

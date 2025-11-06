@@ -9,7 +9,7 @@ export async function middleware(req: NextRequest) {
 
   const idToken = req.cookies.get("id_token")?.value;
   if (!idToken) {
-    return NextResponse.redirect(new URL("/api/auth/login", req.url));
+    return NextResponse.redirect(new URL("/auth/signin", req.url));
   }
 
   try {
@@ -23,7 +23,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(refreshUrl);
     }
     // Any other error -> login
-    return NextResponse.redirect(new URL("/api/auth/login", req.url));
+    return NextResponse.redirect(new URL("/auth/signin", req.url));
   }
 }
 
