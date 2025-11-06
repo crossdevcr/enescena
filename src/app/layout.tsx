@@ -24,8 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <QueryProvider>
           <AuthInitializer>
             <NavigationProvider>
-              <NavBar />
-              <ThemeRegistry>{children}</ThemeRegistry>
+              <ThemeRegistry>
+                <NavBar />
+                {children}
+              </ThemeRegistry>
             </NavigationProvider>
           </AuthInitializer>
         </QueryProvider>

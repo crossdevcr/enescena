@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
 import { 
   AppBar, 
   Toolbar, 
@@ -44,14 +43,15 @@ export default function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { dashboardMobileOpen, toggleDashboardMobile } = useNavigation();
-  const { isMobile, isTablet, mounted } = useResponsive();
+  const { isMobile, isTablet, isDashboardPage, mounted } = useResponsive();
   const router = useRouter();
-  const pathname = usePathname();
-  
-  const isDashboardPage = pathname.startsWith('/dashboard');
+
+  // Use safe defaults during SSR and initial hydration
+  const safeIsAuthenticated = mounted && isAuthenticated;
+  const safeUser = mounted ? user : null;
 
   const handleDrawerToggle = () => {
-    if (isDashboardPage && isAuthenticated) {
+    if (isDashboardPage && safeIsAuthenticated) {
       toggleDashboardMobile();
     } else {
       setMobileOpen(!mobileOpen);
@@ -75,7 +75,7 @@ export default function NavBar() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (isDashboardPage && isAuthenticated && dashboardMobileOpen) {
+        if (isDashboardPage && safeIsAuthenticated && dashboardMobileOpen) {
           toggleDashboardMobile();
         } else if (mobileOpen) {
           setMobileOpen(false);
@@ -83,11 +83,11 @@ export default function NavBar() {
       }
     };
 
-    if (mobileOpen || (isDashboardPage && isAuthenticated && dashboardMobileOpen)) {
+    if (mobileOpen || (isDashboardPage && safeIsAuthenticated && dashboardMobileOpen)) {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [mobileOpen, dashboardMobileOpen, isDashboardPage, isAuthenticated, toggleDashboardMobile]);
+  }, [mobileOpen, dashboardMobileOpen, isDashboardPage, safeIsAuthenticated, toggleDashboardMobile]);
 
   // Navigation items for authenticated users
   const getNavigationItems = () => {
@@ -99,13 +99,13 @@ export default function NavBar() {
 
     // Role-specific navigation items
     const roleSpecificItems = [];
-    if (user.role === 'ARTIST') {
+    if (safeUser?.role === 'ARTIST') {
       roleSpecificItems.push(
         { text: 'My Profile', icon: <PersonIcon />, href: '/dashboard/artist/profile' },
         { text: 'My Gigs', icon: <EventIcon />, href: '/dashboard/artist/gigs' },
         { text: 'Availability', icon: <SettingsIcon />, href: '/dashboard/artist/availability' }
       );
-    } else if (user.role === 'VENUE') {
+    } else if (safeUser?.role === 'VENUE') {
       roleSpecificItems.push(
         { text: 'Venue Profile', icon: <BusinessIcon />, href: '/dashboard/venue/profile' },
         { text: 'Events', icon: <EventIcon />, href: '/dashboard/venue/events' },
@@ -140,7 +140,7 @@ export default function NavBar() {
       </Box>
       
       <List>
-        {!isAuthenticated ? (
+        {!safeIsAuthenticated ? (
           // Unauthenticated menu items
           <>
             <ListItem disablePadding>
@@ -193,16 +193,16 @@ export default function NavBar() {
         ) : (
           // Authenticated menu items - show user info and navigation for non-dashboard pages
           <>
-            {!isDashboardPage && user && (
+            {!isDashboardPage && safeUser && (
               <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Logged in as
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
-                  {user.name || user.email}
+                  {safeUser.name || safeUser.email}
                 </Typography>
                 <Chip 
-                  label={user.role}
+                  label={safeUser.role}
                   size="small"
                   sx={{ mt: 1, textTransform: 'capitalize' }}
                 />
@@ -278,40 +278,6 @@ export default function NavBar() {
     </Box>
   );
 
-  if (isLoading || !mounted) {
-    return (
-      <AppBar 
-        position="static"
-        sx={{ 
-          background: "linear-gradient(135deg, #000000 0%, #262626 100%)",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)"
-        }}
-      >
-        <Toolbar sx={{ minHeight: 64 }}>
-          <Typography 
-            variant="h5" 
-            component={Link} 
-            href="/"
-            sx={{ 
-              flexGrow: 1, 
-              textDecoration: 'none', 
-              color: 'white',
-              cursor: 'pointer',
-              fontWeight: 700,
-              letterSpacing: '-0.025em',
-              '&:hover': {
-                color: 'primary.light',
-              }
-            }}
-          >
-            Enescena
-          </Typography>
-          <CircularProgress size={24} sx={{ color: 'white' }} />
-        </Toolbar>
-      </AppBar>
-    );
-  }
-
   return (
     <>
       <AppBar 
@@ -328,12 +294,12 @@ export default function NavBar() {
               edge="start"
               onClick={handleDrawerToggle}
               aria-label={
-                isDashboardPage && isAuthenticated 
+                isDashboardPage && safeIsAuthenticated 
                   ? (dashboardMobileOpen ? "Close dashboard menu" : "Open dashboard menu")
                   : (mobileOpen ? "Close navigation menu" : "Open navigation menu")
               }
-              aria-expanded={isDashboardPage && isAuthenticated ? dashboardMobileOpen : mobileOpen}
-              aria-controls={isDashboardPage && isAuthenticated ? "dashboard-navigation-menu" : "mobile-navigation-menu"}
+              aria-expanded={isDashboardPage && safeIsAuthenticated ? dashboardMobileOpen : mobileOpen}
+              aria-controls={isDashboardPage && safeIsAuthenticated ? "dashboard-navigation-menu" : "mobile-navigation-menu"}
               sx={{ 
                 mr: 2, 
                 color: 'white',
@@ -375,11 +341,11 @@ export default function NavBar() {
           {/* Desktop navigation */}
           {!isMobile && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {isAuthenticated ? (
+              {safeIsAuthenticated ? (
                 // Authenticated user navigation - simplified
                 <>
                   {/* Sign out button */}
-                  {isLoading ? (
+                  {isLoading || !mounted ? (
                     <Skeleton 
                       variant="rectangular" 
                       width={isTablet ? 44 : 100} 
@@ -413,6 +379,28 @@ export default function NavBar() {
                       {isTablet ? '' : (isSigningOut ? 'Signing out...' : 'Sign Out')}
                     </Button>
                   )}
+                </>
+              ) : !mounted ? (
+                // Loading skeletons during hydration
+                <>
+                  <Skeleton 
+                    variant="rectangular" 
+                    width={isTablet ? 44 : 100} 
+                    height={44}
+                    sx={{ 
+                      borderRadius: 1,
+                      bgcolor: 'rgba(255, 255, 255, 0.1)'
+                    }}
+                  />
+                  <Skeleton 
+                    variant="rectangular" 
+                    width={isTablet ? 44 : 100} 
+                    height={44}
+                    sx={{ 
+                      borderRadius: 1,
+                      bgcolor: 'rgba(255, 255, 255, 0.1)'
+                    }}
+                  />
                 </>
               ) : (
                 // Unauthenticated user navigation
