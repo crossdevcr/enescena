@@ -58,8 +58,8 @@ export const useAuthStore = create<AuthState>()(
             });
 
             if (response.ok) {
-              const userData = await response.json();
-              get().setUser(userData);
+              const responseData = await response.json();
+              get().setUser(responseData.user);
             } else {
               get().setUser(null);
             }

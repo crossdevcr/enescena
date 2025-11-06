@@ -20,7 +20,6 @@ import { useAuthStore } from "@/stores/authStore";
 
 export default function NavBar() {
   const { user, isAuthenticated, isLoading, signOut } = useAuthStore();
-
   if (isLoading) {
     return (
       <AppBar 
@@ -88,9 +87,10 @@ export default function NavBar() {
             // Authenticated user navigation
             <>
               {/* User info chip */}
-              <Chip 
-                label={`${user?.name || user?.email} (${user?.role})`}
-                variant="outlined"
+              {user && (user.name || user.email) && (
+                <Chip 
+                  label={`${user.name || user.email} (${user.role || 'User'})`}
+                  variant="outlined"
                 sx={{ 
                   color: 'white', 
                   borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -100,7 +100,8 @@ export default function NavBar() {
                     fontWeight: 500 
                   }
                 }}
-              />
+                />
+              )}
               
               {/* Dashboard button */}
               <Button 
