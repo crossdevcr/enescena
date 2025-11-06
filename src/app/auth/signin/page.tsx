@@ -114,26 +114,65 @@ export default function LoginPage() {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          py: 4
-        }}
-      >
-        <Card sx={{ width: "100%", maxWidth: 400 }}>
-          <CardContent sx={{ p: 4 }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #F9FAFB 0%, #E5E7EB 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        py: 4
+      }}
+    >
+      <Container maxWidth="sm">
+        <Card 
+          sx={{ 
+            width: "100%", 
+            maxWidth: 400,
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+            border: "1px solid",
+            borderColor: "grey.200"
+          }}
+        >
+          <CardContent sx={{ p: 5 }}>
+            {/* Brand Header */}
+            <Box sx={{ textAlign: "center", mb: 4 }}>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{ 
+                  fontWeight: 700,
+                  color: "text.primary",
+                  mb: 1,
+                  letterSpacing: "-0.025em"
+                }}
+              >
+                Enescena
+              </Typography>
+              <Box 
+                sx={{ 
+                  width: 40, 
+                  height: 3, 
+                  backgroundColor: "primary.main", 
+                  mx: "auto", 
+                  mb: 3,
+                  borderRadius: 1.5
+                }} 
+              />
+            </Box>
+
             <Typography
-              variant="h4"
-              component="h1"
+              variant="h5"
+              component="h2"
               gutterBottom
               textAlign="center"
-              sx={{ mb: 3 }}
+              sx={{ 
+                mb: 2,
+                fontWeight: 600,
+                color: "text.primary"
+              }}
             >
-              Sign In
+              Welcome Back
             </Typography>
             
             <Typography
@@ -142,7 +181,7 @@ export default function LoginPage() {
               textAlign="center"
               sx={{ mb: 4 }}
             >
-              Welcome back! Please sign in to your account.
+              Sign in to continue to your dashboard
             </Typography>
 
             {errors.general && (
@@ -209,7 +248,22 @@ export default function LoginPage() {
                 variant="contained"
                 size="large"
                 disabled={isLoading}
-                sx={{ mt: 3, mb: 2 }}
+                sx={{ 
+                  mt: 4, 
+                  mb: 3,
+                  py: 1.5,
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  backgroundColor: "primary.main",
+                  "&:hover": {
+                    backgroundColor: "primary.dark",
+                    transform: "translateY(-1px)",
+                    boxShadow: "0 6px 20px rgba(220, 38, 38, 0.3)"
+                  },
+                  "&:disabled": {
+                    backgroundColor: "grey.300"
+                  }
+                }}
               >
                 {isLoading ? "Signing In..." : "Sign In"}
               </Button>
@@ -237,7 +291,7 @@ export default function LoginPage() {
             </Box>
           </CardContent>
         </Card>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 }

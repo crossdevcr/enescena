@@ -23,29 +23,59 @@ export default function NavBar() {
 
   if (isLoading) {
     return (
-      <AppBar position="static" color="primary">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+      <AppBar 
+        position="static" 
+        sx={{ 
+          backgroundColor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+        }}
+      >
+        <Toolbar sx={{ minHeight: 64 }}>
+          <Typography 
+            variant="h5" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              color: 'text.primary',
+              fontWeight: 700,
+              letterSpacing: '-0.025em'
+            }}
+          >
             Enescena
           </Typography>
-          <CircularProgress size={24} color="inherit" />
+          <CircularProgress size={24} color="primary" />
         </Toolbar>
       </AppBar>
     );
   }
 
   return (
-    <AppBar position="static" color="primary">
-      <Toolbar>
+    <AppBar 
+      position="static" 
+      sx={{ 
+        backgroundColor: 'background.paper',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+      }}
+    >
+      <Toolbar sx={{ minHeight: 64 }}>
         <Typography 
-          variant="h6" 
+          variant="h5" 
           component={Link} 
           href="/"
           sx={{ 
             flexGrow: 1, 
             textDecoration: 'none', 
-            color: 'inherit',
-            cursor: 'pointer'
+            color: 'text.primary',
+            cursor: 'pointer',
+            fontWeight: 700,
+            letterSpacing: '-0.025em',
+            '&:hover': {
+              color: 'primary.main',
+            }
           }}
         >
           Enescena
@@ -60,29 +90,47 @@ export default function NavBar() {
                 label={`${user?.name || user?.email} (${user?.role})`}
                 variant="outlined"
                 sx={{ 
-                  color: 'white', 
-                  borderColor: 'rgba(255,255,255,0.5)',
-                  '& .MuiChip-label': { color: 'white' }
+                  color: 'text.secondary', 
+                  borderColor: 'grey.300',
+                  backgroundColor: 'grey.50',
+                  '& .MuiChip-label': { 
+                    color: 'text.secondary',
+                    fontWeight: 500 
+                  }
                 }}
               />
               
               {/* Dashboard button */}
               <Button 
-                color="inherit" 
                 component={Link}
                 href="/dashboard"
                 startIcon={<DashboardIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'grey.100',
+                    color: 'primary.main'
+                  }
+                }}
               >
                 Dashboard
               </Button>
 
               {/* Sign out button */}
               <Button 
-                color="inherit" 
                 onClick={signOut}
                 startIcon={<LogoutIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'error.main',
+                    color: 'white'
+                  }
+                }}
               >
                 Sign Out
               </Button>
@@ -91,21 +139,36 @@ export default function NavBar() {
             // Unauthenticated user navigation
             <>
               <Button 
-                color="inherit" 
                 component={Link}
                 href="/auth/signin"
                 startIcon={<LoginIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'grey.100',
+                    color: 'primary.main'
+                  }
+                }}
               >
                 Sign In
               </Button>
               
               <Button 
-                color="inherit" 
+                variant="contained"
                 component={Link}
                 href="/auth/signup"
                 startIcon={<PersonAddIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'primary.dark',
+                  }
+                }}
               >
                 Sign Up
               </Button>

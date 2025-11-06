@@ -496,19 +496,88 @@ export default function SignUpPage() {
   };
 
   return (
-    <Container maxWidth="md">
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          py: 4
-        }}
-      >
-        <Card sx={{ width: "100%", maxWidth: 600 }}>
-          <CardContent sx={{ p: 4 }}>
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #F9FAFB 0%, #E5E7EB 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        py: 4
+      }}
+    >
+      <Container maxWidth="md">
+        <Card 
+          sx={{ 
+            width: "100%", 
+            maxWidth: 600,
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+            border: "1px solid",
+            borderColor: "grey.200"
+          }}
+        >
+          <CardContent sx={{ p: 5 }}>
+            {/* Brand Header */}
+            <Box sx={{ textAlign: "center", mb: 4 }}>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{ 
+                  fontWeight: 700,
+                  color: "text.primary",
+                  mb: 1,
+                  letterSpacing: "-0.025em"
+                }}
+              >
+                Enescena
+              </Typography>
+              <Box 
+                sx={{ 
+                  width: 40, 
+                  height: 3, 
+                  backgroundColor: "primary.main", 
+                  mx: "auto", 
+                  mb: 3,
+                  borderRadius: 1.5
+                }} 
+              />
+              <Typography
+                variant="h5"
+                component="h2"
+                sx={{ 
+                  fontWeight: 600,
+                  color: "text.primary",
+                  mb: 1
+                }}
+              >
+                Create Your Account
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                Join the community of artists and venues
+              </Typography>
+            </Box>
+
+            <Stepper 
+              activeStep={activeStep} 
+              sx={{ 
+                mb: 5,
+                "& .MuiStepLabel-label": {
+                  fontSize: "0.9rem",
+                  fontWeight: 500
+                },
+                "& .MuiStepIcon-root": {
+                  "&.Mui-active": {
+                    color: "primary.main"
+                  },
+                  "&.Mui-completed": {
+                    color: "primary.main"
+                  }
+                }
+              }}
+            >
               {steps.map((label) => (
                 <Step key={label}>
                   <StepLabel>{label}</StepLabel>
@@ -519,10 +588,17 @@ export default function SignUpPage() {
             {renderStepContent()}
 
             {activeStep < 2 && (
-              <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mt: 5 }}>
                 <Button
                   disabled={activeStep === 0}
                   onClick={handleBack}
+                  sx={{ 
+                    fontWeight: 600,
+                    color: "text.secondary",
+                    "&:hover": {
+                      backgroundColor: "grey.100"
+                    }
+                  }}
                 >
                   Back
                 </Button>
@@ -530,6 +606,21 @@ export default function SignUpPage() {
                   variant="contained"
                   onClick={handleNext}
                   disabled={isLoading}
+                  sx={{ 
+                    py: 1.5,
+                    px: 4,
+                    fontWeight: 600,
+                    fontSize: "1rem",
+                    backgroundColor: "primary.main",
+                    "&:hover": {
+                      backgroundColor: "primary.dark",
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 6px 20px rgba(220, 38, 38, 0.3)"
+                    },
+                    "&:disabled": {
+                      backgroundColor: "grey.300"
+                    }
+                  }}
                 >
                   {activeStep === 1 ? (isLoading ? "Creating Account..." : "Create Account") : "Next"}
                 </Button>
@@ -548,7 +639,7 @@ export default function SignUpPage() {
             )}
           </CardContent>
         </Card>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 }
