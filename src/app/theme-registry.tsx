@@ -21,8 +21,8 @@ const theme = createTheme({
       contrastText: "#FFFFFF",
     },
     background: {
-      default: "#FAFAFA", // Clean white background
-      paper: "#FFFFFF", // Pure white for cards/surfaces
+      default: "linear-gradient(135deg, #1F2937 0%, #374151 50%, #4B5563 100%)", // Dark gradient background
+      paper: "#FFFFFF", // Pure white for cards/surfaces to create contrast
     },
     text: {
       primary: "#111827", // Near black for primary text
@@ -99,8 +99,15 @@ const theme = createTheme({
           },
         },
         contained: {
+          backgroundColor: "#DC2626",
+          color: "#FFFFFF",
           "&:hover": {
+            backgroundColor: "#B91C1C",
             boxShadow: "0 4px 12px rgba(220, 38, 38, 0.25)",
+          },
+          "&:disabled": {
+            backgroundColor: "#D1D5DB",
+            color: "#6B7280",
           },
         },
       },
@@ -118,9 +125,10 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: "#FFFFFF",
-          color: "#111827",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+          background: "linear-gradient(135deg, #1F2937 0%, #374151 100%)",
+          color: "#FFFFFF",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
+          backdropFilter: "blur(10px)",
         },
       },
     },

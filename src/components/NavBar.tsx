@@ -24,28 +24,32 @@ export default function NavBar() {
   if (isLoading) {
     return (
       <AppBar 
-        position="static" 
+        position="static"
         sx={{ 
-          backgroundColor: 'background.paper',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+          background: "linear-gradient(135deg, #1F2937 0%, #374151 100%)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)"
         }}
       >
         <Toolbar sx={{ minHeight: 64 }}>
           <Typography 
             variant="h5" 
-            component="div" 
+            component={Link} 
+            href="/"
             sx={{ 
-              flexGrow: 1,
-              color: 'text.primary',
+              flexGrow: 1, 
+              textDecoration: 'none', 
+              color: 'white',
+              cursor: 'pointer',
               fontWeight: 700,
-              letterSpacing: '-0.025em'
+              letterSpacing: '-0.025em',
+              '&:hover': {
+                color: 'primary.light',
+              }
             }}
           >
             Enescena
           </Typography>
-          <CircularProgress size={24} color="primary" />
+          <CircularProgress size={24} sx={{ color: 'white' }} />
         </Toolbar>
       </AppBar>
     );
@@ -53,12 +57,10 @@ export default function NavBar() {
 
   return (
     <AppBar 
-      position="static" 
+      position="static"
       sx={{ 
-        backgroundColor: 'background.paper',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+        background: "linear-gradient(135deg, #1F2937 0%, #374151 100%)",
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)"
       }}
     >
       <Toolbar sx={{ minHeight: 64 }}>
@@ -69,12 +71,12 @@ export default function NavBar() {
           sx={{ 
             flexGrow: 1, 
             textDecoration: 'none', 
-            color: 'text.primary',
+            color: 'white',
             cursor: 'pointer',
             fontWeight: 700,
             letterSpacing: '-0.025em',
             '&:hover': {
-              color: 'primary.main',
+              color: 'primary.light',
             }
           }}
         >
@@ -90,11 +92,11 @@ export default function NavBar() {
                 label={`${user?.name || user?.email} (${user?.role})`}
                 variant="outlined"
                 sx={{ 
-                  color: 'text.secondary', 
-                  borderColor: 'grey.300',
-                  backgroundColor: 'grey.50',
+                  color: 'white', 
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
                   '& .MuiChip-label': { 
-                    color: 'text.secondary',
+                    color: 'white',
                     fontWeight: 500 
                   }
                 }}
@@ -107,11 +109,11 @@ export default function NavBar() {
                 startIcon={<DashboardIcon />}
                 sx={{ 
                   textTransform: 'none',
-                  color: 'text.primary',
+                  color: 'white',
                   fontWeight: 600,
                   '&:hover': {
-                    backgroundColor: 'grey.100',
-                    color: 'primary.main'
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: 'primary.light'
                   }
                 }}
               >
@@ -124,7 +126,7 @@ export default function NavBar() {
                 startIcon={<LogoutIcon />}
                 sx={{ 
                   textTransform: 'none',
-                  color: 'text.secondary',
+                  color: 'rgba(255, 255, 255, 0.7)',
                   fontWeight: 600,
                   '&:hover': {
                     backgroundColor: 'error.main',
@@ -139,16 +141,19 @@ export default function NavBar() {
             // Unauthenticated user navigation
             <>
               <Button 
+                variant="outlined"
                 component={Link}
                 href="/auth/signin"
                 startIcon={<LoginIcon />}
                 sx={{ 
                   textTransform: 'none',
-                  color: 'text.primary',
+                  color: 'white',
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
                   fontWeight: 600,
                   '&:hover': {
-                    backgroundColor: 'grey.100',
-                    color: 'primary.main'
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderColor: 'white',
+                    color: 'white'
                   }
                 }}
               >
@@ -163,10 +168,12 @@ export default function NavBar() {
                 sx={{ 
                   textTransform: 'none',
                   fontWeight: 600,
-                  backgroundColor: 'primary.main',
+                  backgroundColor: '#DC2626',
                   color: 'white',
                   '&:hover': {
-                    backgroundColor: 'primary.dark',
+                    backgroundColor: '#B91C1C',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 6px 20px rgba(220, 38, 38, 0.4)'
                   }
                 }}
               >

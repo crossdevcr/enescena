@@ -182,7 +182,21 @@ export default function ConfirmEmailPage() {
                 variant="contained"
                 size="large"
                 disabled={isLoading}
-                sx={{ mb: 2 }}
+                sx={{ 
+                  mb: 2,
+                  py: 1.5,
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  backgroundColor: "primary.main",
+                  "&:hover": {
+                    backgroundColor: "primary.dark",
+                    transform: "translateY(-1px)",
+                    boxShadow: "0 6px 20px rgba(220, 38, 38, 0.3)"
+                  },
+                  "&:disabled": {
+                    backgroundColor: "grey.300"
+                  }
+                }}
               >
                 {isLoading ? "Verifying..." : "Confirm Email"}
               </Button>

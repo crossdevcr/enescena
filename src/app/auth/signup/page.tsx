@@ -471,7 +471,21 @@ export default function SignUpPage() {
               size="large"
               onClick={handleConfirmEmail}
               disabled={isLoading}
-              sx={{ mt: 3 }}
+              sx={{ 
+                mt: 3,
+                py: 1.5,
+                fontWeight: 600,
+                fontSize: "1rem",
+                backgroundColor: "primary.main",
+                "&:hover": {
+                  backgroundColor: "primary.dark",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 6px 20px rgba(220, 38, 38, 0.3)"
+                },
+                "&:disabled": {
+                  backgroundColor: "grey.300"
+                }
+              }}
             >
               {isLoading ? "Verifying..." : "Verify Email"}
             </Button>
@@ -499,7 +513,6 @@ export default function SignUpPage() {
     <Box
       sx={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #F9FAFB 0%, #E5E7EB 100%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -511,9 +524,11 @@ export default function SignUpPage() {
         sx={{ 
           width: "100%", 
           maxWidth: 600,
-          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+          boxShadow: "0 25px 50px rgba(0, 0, 0, 0.4)",
           border: "1px solid",
-          borderColor: "grey.200"
+          borderColor: "rgba(255, 255, 255, 0.1)",
+          borderRadius: 3,
+          backdropFilter: "blur(10px)"
         }}
       >
           <CardContent sx={{ p: 5 }}>
