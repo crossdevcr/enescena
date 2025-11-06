@@ -191,9 +191,9 @@ export default function NavBar() {
             </ListItem>
           </>
         ) : (
-          // Authenticated menu items
+          // Authenticated menu items - show user info and navigation for non-dashboard pages
           <>
-            {user && (
+            {!isDashboardPage && user && (
               <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Logged in as
@@ -209,7 +209,8 @@ export default function NavBar() {
               </Box>
             )}
             
-            {getNavigationItems().map((item, index) => (
+            {/* Only show navigation items if not on dashboard page */}
+            {!isDashboardPage && getNavigationItems().map((item, index) => (
               <ListItem key={index} disablePadding>
                 <ListItemButton 
                   component={Link} 
@@ -375,70 +376,8 @@ export default function NavBar() {
           {!isMobile && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {isAuthenticated ? (
-                // Authenticated user navigation
+                // Authenticated user navigation - simplified
                 <>
-                  {/* User info chip */}
-                  {isLoading ? (
-                    <Skeleton 
-                      variant="rectangular" 
-                      width={isTablet ? 80 : 180} 
-                      height={isTablet ? 24 : 32}
-                      sx={{ 
-                        borderRadius: 4,
-                        bgcolor: 'rgba(255, 255, 255, 0.1)'
-                      }}
-                    />
-                  ) : user && (user.name || user.email) && (
-                    <Chip 
-                      label={isTablet ? user.role || 'User' : `${user.name || user.email} (${user.role || 'User'})`}
-                      variant="outlined"
-                      size={isTablet ? "small" : "medium"}
-                      sx={{ 
-                        color: 'white', 
-                        borderColor: 'rgba(255, 255, 255, 0.3)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        '& .MuiChip-label': { 
-                          color: 'white',
-                          fontWeight: 500,
-                          textTransform: 'capitalize'
-                        }
-                      }}
-                    />
-                  )}
-                  
-                  {/* Dashboard button */}
-                  {isLoading ? (
-                    <Skeleton 
-                      variant="rectangular" 
-                      width={isTablet ? 44 : 120} 
-                      height={44}
-                      sx={{ 
-                        borderRadius: 1,
-                        bgcolor: 'rgba(255, 255, 255, 0.1)'
-                      }}
-                    />
-                  ) : (
-                    <Button 
-                      component={Link}
-                      href="/dashboard"
-                      startIcon={<DashboardIcon />}
-                      size={isTablet ? "small" : "medium"}
-                      sx={{ 
-                        textTransform: 'none',
-                        color: 'white',
-                        fontWeight: 600,
-                        px: isTablet ? 2 : 3,
-                        minHeight: 44,
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'primary.light'
-                        }
-                      }}
-                    >
-                      {isTablet ? '' : 'Dashboard'}
-                    </Button>
-                  )}
-
                   {/* Sign out button */}
                   {isLoading ? (
                     <Skeleton 
