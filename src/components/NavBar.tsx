@@ -105,6 +105,19 @@ export default function NavBar() {
                 component={Link} 
                 href="/auth/signin"
                 onClick={handleDrawerToggle}
+                sx={{
+                  minHeight: 48,
+                  py: 1.5,
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    transform: 'translateX(4px)'
+                  }
+                }}
               >
                 <ListItemIcon><LoginIcon /></ListItemIcon>
                 <ListItemText primary="Sign In" />
@@ -115,6 +128,19 @@ export default function NavBar() {
                 component={Link} 
                 href="/auth/signup"
                 onClick={handleDrawerToggle}
+                sx={{
+                  minHeight: 48,
+                  py: 1.5,
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'secondary.main',
+                    color: 'white',
+                    transform: 'translateX(4px)'
+                  }
+                }}
               >
                 <ListItemIcon><PersonAddIcon /></ListItemIcon>
                 <ListItemText primary="Sign Up" />
@@ -146,6 +172,19 @@ export default function NavBar() {
                   component={Link} 
                   href={item.href}
                   onClick={handleDrawerToggle}
+                  sx={{
+                    minHeight: 48,
+                    py: 1.5,
+                    borderRadius: 1,
+                    mx: 1,
+                    mb: 0.5,
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: 'primary.main',
+                      color: 'white',
+                      transform: 'translateX(4px)'
+                    }
+                  }}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
@@ -161,9 +200,25 @@ export default function NavBar() {
                   signOut();
                   handleDrawerToggle();
                 }}
-                sx={{ color: 'error.main' }}
+                sx={{ 
+                  color: 'error.main',
+                  minHeight: 48,
+                  py: 1.5,
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'error.main',
+                    color: 'white',
+                    transform: 'translateX(4px)'
+                  }
+                }}
               >
-                <ListItemIcon sx={{ color: 'error.main' }}>
+                <ListItemIcon sx={{ 
+                  color: 'inherit',
+                  transition: 'color 0.2s ease-in-out'
+                }}>
                   <LogoutIcon />
                 </ListItemIcon>
                 <ListItemText primary="Sign Out" />
@@ -227,12 +282,18 @@ export default function NavBar() {
               sx={{ 
                 mr: 2, 
                 color: 'white',
+                minWidth: 48,
+                minHeight: 48,
+                p: 1.5,
+                borderRadius: 2,
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  transform: 'scale(1.05)'
                 }
               }}
             >
-              <MenuIcon />
+              <MenuIcon sx={{ fontSize: 24 }} />
             </IconButton>
           )}
 
@@ -378,8 +439,12 @@ export default function NavBar() {
             boxSizing: 'border-box', 
             width: 280,
             border: 'none',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            transition: 'transform 0.3s ease-in-out'
           },
+          '& .MuiBackdrop-root': {
+            transition: 'opacity 0.3s ease-in-out'
+          }
         }}
       >
         {drawer}

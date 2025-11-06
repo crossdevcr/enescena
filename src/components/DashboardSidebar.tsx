@@ -214,14 +214,18 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
                   mb: 0.5,
                   py: 1.5,
                   px: 2,
+                  minHeight: 48,
                   backgroundColor: isActive ? 'primary.main' : 'transparent',
                   color: isActive ? 'white' : 'text.primary',
+                  transition: 'all 0.2s ease-in-out',
                   '&:hover': {
                     backgroundColor: isActive ? 'primary.dark' : 'grey.100',
+                    transform: 'translateX(4px)',
                   },
                   '& .MuiListItemIcon-root': {
                     color: isActive ? 'white' : 'text.secondary',
-                    minWidth: 40
+                    minWidth: 40,
+                    transition: 'color 0.2s ease-in-out'
                   }
                 }}
               >
