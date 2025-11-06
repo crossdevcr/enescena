@@ -60,7 +60,7 @@ export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
     const userAttributes: AttributeType[] = [
       { Name: "email", Value: email },
       { Name: "name", Value: name },
-      { Name: "custom:role", Value: userType }, // Custom attribute for user type
+      { Name: "custom:role", Value: userType },
     ];
 
     const secretHash = createSecretHash(email);
@@ -89,7 +89,7 @@ export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
     } else if (error.name === "InvalidPasswordException") {
       message = "Password does not meet requirements.";
     } else if (error.name === "InvalidParameterException") {
-      message = "Invalid parameter. Please check if custom attributes are configured in your User Pool.";
+      message = "Invalid parameter. Please contact support.";
     }
 
     return {
