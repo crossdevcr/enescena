@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { cookies } from "next/headers";
 import { hasArtistConflict } from "@/lib/booking/conflicts";
+import { createEventForBooking } from "@/lib/booking/eventCreation";
 import { sendEmail } from "@/lib/email/mailer";
 import {
   bookingAcceptedForVenue,
@@ -169,7 +170,16 @@ export async function PATCH(
         },
       });
 
-      // Email the venue (best-effort; don’t block API response)
+      // Auto-create event for individual bookings (best-effort, don't block API response)
+      (async () => {
+        try {
+          await createEventForBooking(id);
+        } catch (e) {
+          console.error("[event] Auto-creation failed for booking", id, e);
+        }
+      })();
+
+      // Email the venue (best-effort; don't block API response)
       (async () => {
         try {
           const to = updated.venue?.user?.email;
