@@ -16,10 +16,10 @@ import {
   Logout as LogoutIcon,
   PersonAdd as PersonAddIcon
 } from "@mui/icons-material";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function NavBar() {
-  const { user, isAuthenticated, isLoading, signOut } = useAuth();
+  const { user, isAuthenticated, isLoading, signOut } = useAuthStore();
 
   if (isLoading) {
     return (

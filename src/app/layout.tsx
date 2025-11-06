@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import ThemeRegistry from "./theme-registry";
 import NavBar from "@/components/NavBar";
+import QueryProvider from "@/providers/QueryProvider";
+import AuthInitializer from "@/components/AuthInitializer";
 
 export const metadata: Metadata = {
   title: "Enescena",
@@ -18,8 +20,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           minHeight: "100vh"
         }}
       >
-        <NavBar />
-        <ThemeRegistry>{children}</ThemeRegistry>
+        <QueryProvider>
+          <AuthInitializer>
+            <NavBar />
+            <ThemeRegistry>{children}</ThemeRegistry>
+          </AuthInitializer>
+        </QueryProvider>
       </body>
     </html>
   );
