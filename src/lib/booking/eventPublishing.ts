@@ -215,3 +215,118 @@ export async function cancelBookingRequestsForEvent(eventId: string): Promise<vo
     }
   })();
 }
+
+/**
+ * Creates a booking request for a single artist when added to a published event
+ */
+export async function createBookingRequestForArtist(eventId: string, artistId: string): Promise<void> {
+  // Get the event details
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      eventDate: true,
+      hours: true,
+      venueId: true
+    }
+  });
+
+  if (!event) {
+    throw new Error("Event not found");
+  }
+
+  if (event.status !== "PUBLISHED") {
+    throw new Error("Event must be published to create booking requests");
+  }
+
+  if (!event.eventDate) {
+    throw new Error("Event must have an event date to create booking requests");
+  }
+
+  // Get artist details
+  const artist = await prisma.artist.findUnique({
+    where: { id: artistId },
+    select: {
+      id: true,
+      name: true,
+      user: { select: { email: true, name: true } }
+    }
+  });
+
+  if (!artist) {
+    throw new Error("Artist not found");
+  }
+
+  // Get venue information for email
+  const venue = await prisma.venue.findUnique({
+    where: { id: event.venueId },
+    select: { name: true }
+  });
+
+  // Check if booking request already exists for this artist and event
+  const existingBooking = await prisma.booking.findFirst({
+    where: {
+      artistId: artistId,
+      eventId: event.id
+    }
+  });
+
+  if (existingBooking) {
+    console.log(`Booking already exists for artist ${artistId} in event ${eventId}`);
+    return;
+  }
+
+  // Create a booking request
+  const bookingId = `b_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  
+  const booking = await prisma.booking.create({
+    data: {
+      id: bookingId,
+      eventDate: event.eventDate,
+      hours: event.hours,
+      note: `Booking request for event: ${event.title}`,
+      status: "PENDING",
+      venueId: event.venueId,
+      artistId: artistId,
+      eventId: event.id
+    }
+  });
+
+  console.log(`Created booking request ${bookingId} for artist ${artist.name} for event ${event.title}`);
+
+  // Revalidate relevant pages to update the UI
+  try {
+    revalidatePath(`/dashboard/venue/events/${eventId}`);
+    revalidatePath(`/dashboard/venue/events`);
+    revalidatePath(`/dashboard/venue/bookings`);
+    revalidatePath(`/dashboard/artist/gigs`);
+  } catch (error) {
+    console.error("Failed to revalidate pages after booking creation:", error);
+  }
+
+  // Send email notification to artist (async, don't block)
+  (async () => {
+    try {
+      const artistEmail = artist.user?.email;
+      if (artistEmail) {
+        const tmpl = bookingCreatedForArtist({
+          artistName: artist.user?.name || artist.name || "there",
+          venueName: venue?.name || "a venue",
+          eventISO: event.eventDate.toISOString(),
+          hours: event.hours ?? undefined,
+          bookingId: booking.id,
+        });
+        const res = await sendEmail({ to: artistEmail, ...tmpl });
+        if (!res.ok) {
+          console.error(`[email] Failed to send booking creation email to ${artistEmail} for booking ${booking.id}`);
+        } else {
+          console.log(`Sent booking creation email to ${artistEmail} for booking ${booking.id}`);
+        }
+      }
+    } catch (error) {
+      console.error(`[email] Error sending booking creation email for booking ${booking.id}:`, error);
+    }
+  })();
+}

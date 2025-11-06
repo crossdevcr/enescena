@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, Mock } from "vitest";
-import { createBookingRequestsForEvent, cancelBookingRequestsForEvent } from "./eventPublishing";
+import { createBookingRequestsForEvent, cancelBookingRequestsForEvent, createBookingRequestForArtist } from "./eventPublishing";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/mailer";
 
@@ -10,6 +10,9 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn()
     },
     venue: {
+      findUnique: vi.fn()
+    },
+    artist: {
       findUnique: vi.fn()
     },
     booking: {
@@ -355,6 +358,90 @@ describe("Event Publishing", () => {
       // Should not attempt any updates
       expect(mockPrisma.booking.updateMany).not.toHaveBeenCalled();
       expect(mockPrisma.eventArtist.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("createBookingRequestForArtist", () => {
+    const mockEvent = {
+      id: "event-1",
+      title: "Test Event",
+      status: "PUBLISHED",
+      eventDate: new Date("2025-12-01T20:00:00Z"),
+      hours: 3,
+      venueId: "venue-1"
+    };
+
+    const mockArtist = {
+      id: "artist-1",
+      name: "Test Artist",
+      user: { email: "artist@test.com", name: "Test Artist" }
+    };
+
+    const mockVenue = {
+      name: "Test Venue"
+    };
+
+    it("should create booking request for artist added to published event", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue(mockEvent);
+      mockPrisma.artist.findUnique.mockResolvedValue(mockArtist);
+      mockPrisma.venue.findUnique.mockResolvedValue(mockVenue);
+      mockPrisma.booking.findFirst.mockResolvedValue(null); // No existing booking
+      mockPrisma.booking.create.mockResolvedValue({
+        id: "booking-1",
+        eventId: "event-1",
+        artistId: "artist-1"
+      });
+
+      await createBookingRequestForArtist("event-1", "artist-1");
+
+      expect(mockPrisma.booking.create).toHaveBeenCalledWith({
+        data: {
+          id: expect.any(String),
+          eventDate: mockEvent.eventDate,
+          hours: mockEvent.hours,
+          note: `Booking request for event: ${mockEvent.title}`,
+          status: "PENDING",
+          venueId: mockEvent.venueId,
+          artistId: "artist-1",
+          eventId: "event-1"
+        }
+      });
+    });
+
+    it("should not create booking if one already exists", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue(mockEvent);
+      mockPrisma.artist.findUnique.mockResolvedValue(mockArtist);
+      mockPrisma.venue.findUnique.mockResolvedValue(mockVenue);
+      mockPrisma.booking.findFirst.mockResolvedValue({ id: "existing-booking" }); // Existing booking
+
+      await createBookingRequestForArtist("event-1", "artist-1");
+
+      expect(mockPrisma.booking.create).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if event is not published", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue({
+        ...mockEvent,
+        status: "DRAFT"
+      });
+
+      await expect(createBookingRequestForArtist("event-1", "artist-1"))
+        .rejects.toThrow("Event must be published to create booking requests");
+    });
+
+    it("should throw error if event not found", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue(null);
+
+      await expect(createBookingRequestForArtist("nonexistent-event", "artist-1"))
+        .rejects.toThrow("Event not found");
+    });
+
+    it("should throw error if artist not found", async () => {
+      mockPrisma.event.findUnique.mockResolvedValue(mockEvent);
+      mockPrisma.artist.findUnique.mockResolvedValue(null);
+
+      await expect(createBookingRequestForArtist("event-1", "nonexistent-artist"))
+        .rejects.toThrow("Artist not found");
     });
   });
 });

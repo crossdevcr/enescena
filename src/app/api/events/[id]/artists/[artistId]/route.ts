@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { sendEmail } from "@/lib/email/mailer";
+import { bookingCancelledForArtist } from "@/lib/email/templates";
 
 /**
  * PATCH /api/events/[id]/artists/[artistId]
@@ -131,21 +134,63 @@ export async function DELETE(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  // Check if there are related bookings
-  const relatedBookings = await prisma.booking.count({
+  // Get related bookings with details for cancellation
+  const relatedBookings = await prisma.booking.findMany({
     where: {
       eventId: eventId,
-      artistId: artistId
+      artistId: artistId,
+      status: { in: ["PENDING", "ACCEPTED"] } // Only cancel active bookings
+    },
+    include: {
+      artist: { 
+        select: { 
+          name: true,
+          user: { select: { email: true } }
+        } 
+      },
+      venue: { select: { name: true } }
     }
   });
 
-  if (relatedBookings > 0) {
-    return NextResponse.json({ 
-      error: "validation_error",
-      message: "Cannot remove artist with existing bookings for this event" 
-    }, { status: 400 });
+  // Cancel related bookings if any
+  if (relatedBookings.length > 0) {
+    await prisma.booking.updateMany({
+      where: {
+        eventId: eventId,
+        artistId: artistId,
+        status: { in: ["PENDING", "ACCEPTED"] }
+      },
+      data: {
+        status: "CANCELLED"
+      }
+    });
+
+    console.log(`Cancelled ${relatedBookings.length} bookings for artist ${artistId} removed from event ${eventId}`);
+
+    // Send cancellation emails to the artist (async, don't block)
+    (async () => {
+      for (const booking of relatedBookings) {
+        try {
+          const artistEmail = booking.artist?.user?.email;
+          if (artistEmail) {
+            const tmpl = bookingCancelledForArtist({
+              artistName: booking.artist?.name || "there",
+              venueName: booking.venue?.name || "the venue",
+              bookingId: booking.id,
+            });
+            const res = await sendEmail({ to: artistEmail, ...tmpl });
+            if (!res.ok) {
+              console.error(`[email] Failed to send cancellation email to ${artistEmail} for booking ${booking.id}`);
+            }
+          }
+        } catch (error) {
+          console.error(`[email] Error sending cancellation email for booking ${booking.id}:`, error);
+        }
+      }
+    })();
   }
 
+  // Remove the artist from the event
   await prisma.eventArtist.delete({
     where: {
       eventId_artistId: {
@@ -155,5 +200,15 @@ export async function DELETE(
     }
   });
 
-  return NextResponse.json({ ok: true });
+  // Revalidate relevant pages to update the UI
+  try {
+    revalidatePath(`/dashboard/venue/events/${eventId}`);
+    revalidatePath(`/dashboard/venue/events`);
+    revalidatePath(`/dashboard/venue/bookings`);
+    revalidatePath(`/dashboard/artist/gigs`);
+  } catch (error) {
+    console.error("Failed to revalidate pages after removing artist:", error);
+  }
+
+  return NextResponse.json({ ok: true, cancelledBookings: relatedBookings.length });
 }

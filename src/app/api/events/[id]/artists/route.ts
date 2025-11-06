@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { createBookingRequestForArtist } from "@/lib/booking/eventPublishing";
 
 /**
  * POST /api/events/[id]/artists
@@ -89,6 +91,25 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       artist: { select: { id: true, name: true, slug: true } }
     }
   });
+
+  // If the event is already published, create a booking request for the new artist
+  if (event.status === "PUBLISHED") {
+    try {
+      await createBookingRequestForArtist(eventId, artistId);
+      console.log(`Created booking request for artist ${artistId} added to published event ${eventId}`);
+    } catch (error) {
+      console.error(`Failed to create booking request for artist ${artistId} in event ${eventId}:`, error);
+      // Don't fail the artist addition if booking creation fails
+    }
+  }
+
+  // Revalidate event pages to show the new artist
+  try {
+    revalidatePath(`/dashboard/venue/events/${eventId}`);
+    revalidatePath(`/dashboard/venue/events`);
+  } catch (error) {
+    console.error("Failed to revalidate pages after adding artist:", error);
+  }
 
   return NextResponse.json({ eventArtist });
 }
