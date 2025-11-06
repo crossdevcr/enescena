@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff, Email, Lock } from "@mui/icons-material";
 import NextLink from "next/link";
+import { triggerAuthCheck } from "@/stores/authStore";
 
 interface FormData {
   email: string;
@@ -91,9 +92,11 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (result.success) {
+        // Trigger auth state refresh
+        triggerAuthCheck();
+        
         // Redirect to main dashboard (handles all user roles)
         router.push("/dashboard");
-        router.refresh(); // Refresh to update auth state
       } else {
         if (result.errors) {
           setErrors(result.errors);
