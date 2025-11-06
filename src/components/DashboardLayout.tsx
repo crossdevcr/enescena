@@ -1,26 +1,16 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import { 
-  Box, 
-  AppBar, 
-  Toolbar, 
-  IconButton, 
-  Typography, 
-} from '@mui/material';
-import { Menu as MenuIcon } from '@mui/icons-material';
+import { Box } from '@mui/material';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { useNavigation } from '@/contexts/NavigationContext';
-import { useResponsive } from '@/hooks/useResponsive';
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  title?: string;
 }
 
-export default function DashboardLayout({ children, title = 'Dashboard' }: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { dashboardMobileOpen, setDashboardMobileOpen, toggleDashboardMobile } = useNavigation();
-  const { isMobile } = useResponsive();
 
   const handleDrawerToggle = () => {
     toggleDashboardMobile();
@@ -55,9 +45,6 @@ export default function DashboardLayout({ children, title = 'Dashboard' }: Dashb
         flexDirection: 'column',
         width: { md: `calc(100% - 280px)` }
       }}>
-        {/* No mobile app bar needed - main NavBar handles this */}
-        
-        {/* Page Content */}
         <Box sx={{ 
           flexGrow: 1,
           backgroundColor: 'grey.50',
