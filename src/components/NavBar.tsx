@@ -25,8 +25,8 @@ export default function NavBar() {
       <AppBar 
         position="static"
         sx={{ 
-          background: "linear-gradient(135deg, #1F2937 0%, #374151 100%)",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)"
+          background: "linear-gradient(135deg, #000000 0%, #262626 100%)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)"
         }}
       >
         <Toolbar sx={{ minHeight: 64 }}>
@@ -58,8 +58,8 @@ export default function NavBar() {
     <AppBar 
       position="static"
       sx={{ 
-        background: "linear-gradient(135deg, #1F2937 0%, #374151 100%)",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)"
+        background: "linear-gradient(135deg, #000000 0%, #262626 100%)",
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)"
       }}
     >
       <Toolbar sx={{ minHeight: 64 }}>
