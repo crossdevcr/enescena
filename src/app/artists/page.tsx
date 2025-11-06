@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getArtists } from "@/lib/data";
 import {
   Avatar,
+  Box,
   Card,
   CardActionArea,
   CardContent,
@@ -20,8 +21,13 @@ export default async function ArtistsPage() {
   const artists = await getArtists();
 
   return (
-    <Container sx={{ py: 6 }}>
-      <Stack spacing={3}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6 }}>
+        <Stack spacing={3}>
         <Typography variant="h4" fontWeight={700}>
           Artists
         </Typography>
@@ -65,5 +71,6 @@ export default async function ArtistsPage() {
         </Grid>
       </Stack>
     </Container>
+    </Box>
   );
 }

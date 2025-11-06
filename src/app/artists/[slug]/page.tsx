@@ -13,8 +13,13 @@ export default async function ArtistPage({ params }: PageProps) {
   if (!artist) return notFound();
 
   return (
-    <Container sx={{ py: 6 }}>
-      <Stack spacing={3}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6 }}>
+        <Stack spacing={3}>
         <Box>
           <Button component={Link} href="/artists" variant="outlined" size="small">
             ← Back to Artists
@@ -54,5 +59,6 @@ export default async function ArtistPage({ params }: PageProps) {
         </Box>
       </Stack>
     </Container>
+    </Box>
   );
 }

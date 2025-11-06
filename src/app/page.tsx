@@ -3,8 +3,13 @@ import { Box, Button, Container, Stack, Typography } from "@mui/material";
 
 export default function HomePage() {
   return (
-    <Container sx={{ py: 8 }}>
-      <Stack spacing={3} alignItems="flex-start">
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 8 }}>
+        <Stack spacing={3} alignItems="flex-start">
         <Typography variant="h3" fontWeight={700}>Enescena</Typography>
         <Typography variant="h6" color="text.secondary" maxWidth={720}>
           A marketplace for artists to showcase their services and for venues to book them on‑demand.
@@ -16,5 +21,6 @@ export default function HomePage() {
         </Box>
       </Stack>
     </Container>
+    </Box>
   );
 }
