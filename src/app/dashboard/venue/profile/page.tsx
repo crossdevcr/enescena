@@ -18,13 +18,8 @@ export default async function VenueProfilePage({
   const showRequiredBanner = searchParams?.reason === "required";
 
   return (
-    <Box sx={{ 
-      minHeight: "100vh", 
-      backgroundColor: "grey.50", 
-      py: 4 
-    }}>
-      <Container sx={{ py: 6, maxWidth: 720 }}>
-        <Stack spacing={3}>
+    <Container sx={{ py: 6, maxWidth: 720 }}>
+      <Stack spacing={3}>
         <Typography variant="h4" fontWeight={700}>Venue Profile</Typography>
 
         {showRequiredBanner && (
@@ -44,6 +39,5 @@ export default async function VenueProfilePage({
         />
       </Stack>
     </Container>
-    </Box>
   );
 }

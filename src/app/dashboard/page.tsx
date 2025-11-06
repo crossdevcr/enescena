@@ -60,30 +60,25 @@ export default async function DashboardPage() {
   };
 
   return (
-    <Box sx={{ 
-      minHeight: "100vh", 
-      backgroundColor: "grey.50", 
-      py: 4 
-    }}>
-      <Container maxWidth="lg">
-        <Stack spacing={4}>
-          {/* Header Section */}
-          <Box sx={{ mb: 4 }}>
-            <Typography 
-              variant="h3" 
-              fontWeight={700}
-              sx={{ 
-                color: "text.primary",
-                mb: 1,
-                letterSpacing: "-0.025em"
-              }}
-            >
-              Dashboard
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
-              Welcome back{user.name ? `, ${user.name}` : user.email ? `, ${user.email}` : ""}
-            </Typography>
-          </Box>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Stack spacing={4}>
+        {/* Header Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography 
+            variant="h3" 
+            fontWeight={700}
+            sx={{ 
+              color: "text.primary",
+              mb: 1,
+              letterSpacing: "-0.025em"
+            }}
+          >
+            Dashboard
+          </Typography>
+          <Typography variant="h6" color="text.secondary">
+            Welcome back{user.name ? `, ${user.name}` : user.email ? `, ${user.email}` : ""}
+          </Typography>
+        </Box>
 
           {/* User Info Card */}
           <Card sx={{ 
@@ -358,8 +353,7 @@ export default async function DashboardPage() {
             </Card>
           )}
 
-        </Stack>
-      </Container>
-    </Box>
+      </Stack>
+    </Container>
   );
 }
