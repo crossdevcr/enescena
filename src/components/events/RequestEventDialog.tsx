@@ -21,7 +21,12 @@ interface RequestEventDialogProps {
 }
 
 export default function RequestEventDialog({ venueId, venueName }: RequestEventDialogProps) {
+  // All useState hooks must be declared at the top, before any conditional logic
   const [isArtist, setIsArtist] = React.useState<boolean | null>(null);
+  const [open, setOpen] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [success, setSuccess] = React.useState(false);
   
   React.useEffect(() => {
     // Check if user is authenticated artist on client side
@@ -51,10 +56,6 @@ export default function RequestEventDialog({ venueId, venueName }: RequestEventD
       </Button>
     );
   }
-  const [open, setOpen] = React.useState(false);
-  const [submitting, setSubmitting] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
