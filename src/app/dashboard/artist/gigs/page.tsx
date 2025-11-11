@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import ArtistBookingActions from "@/components/booking/ArtistBookingActions";
 import StatusTabs from "@/components/common/StatusTabs";
+import ArtistEventCreationDialog from "@/components/events/ArtistEventCreationDialog";
 import { unstable_noStore as noStore } from "next/cache";
 
 function formatDateTimeCR(d: Date) {
@@ -39,7 +40,7 @@ function formatDateTimeCR(d: Date) {
 function statusChip(status: string) {
   const map: Record<string, "default" | "warning" | "success" | "error" | "info"> = {
     PENDING: "warning",
-    ACCEPTED: "success",
+    CONFIRMED: "success",
     DECLINED: "error",
     CANCELLED: "default",
     COMPLETED: "info",
@@ -49,7 +50,7 @@ function statusChip(status: string) {
 
 export const dynamic = "force-dynamic";
 
-const STATUSES = ["ALL", "PENDING", "ACCEPTED", "DECLINED", "CANCELLED", "COMPLETED"] as const;
+const STATUSES = ["ALL", "PENDING", "CONFIRMED", "DECLINED", "CANCELLED", "COMPLETED"] as const;
 type Status = typeof STATUSES[number];
 
 const PAGE_SIZE = 10;
@@ -91,23 +92,32 @@ export default async function ArtistGigsPage({
         }
       : {};
 
-  const bookings = await prisma.booking.findMany({
+  const performances = await prisma.performance.findMany({
     where: { ...baseWhere, ...cursorWhere },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: PAGE_SIZE + 1,
     select: {
       id: true,
-      eventDate: true,
+      agreedFee: true,
+      proposedFee: true,
       hours: true,
-      note: true,
+      notes: true,
       status: true,
       createdAt: true,
-      venue: { select: { name: true } },
+      event: {
+        select: {
+          id: true,
+          title: true,
+          eventDate: true,
+          venue: { select: { name: true } },
+          externalVenueName: true,
+        }
+      },
     },
   });
 
-  const hasNext = bookings.length > PAGE_SIZE;
-  const page = hasNext ? bookings.slice(0, PAGE_SIZE) : bookings;
+  const hasNext = performances.length > PAGE_SIZE;
+  const page = hasNext ? performances.slice(0, PAGE_SIZE) : performances;
 
   const last = page[page.length - 1];
   const nextHref = last
@@ -133,9 +143,18 @@ export default async function ArtistGigsPage({
     }}>
       <Container sx={{ py: 6 }}>
         <Stack spacing={2}>
-        <Typography variant="h4" fontWeight={700}>
-          Incoming Requests
-        </Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h4" fontWeight={700}>
+            My Performances
+          </Typography>
+          
+          <Box sx={{ minWidth: 200 }}>
+            <ArtistEventCreationDialog 
+              artistId={user.artist.id} 
+              onEventCreated={() => window.location.reload()} 
+            />
+          </Box>
+        </Box>
 
         <StatusTabs
           statuses={[...STATUSES]}
@@ -155,42 +174,60 @@ export default async function ArtistGigsPage({
         {page.length === 0 ? (
           <Alert severity="info">
             {status === "ALL"
-              ? "You don’t have any booking requests yet."
-              : `No bookings with status ${status}.`}
+              ? "You don't have any performance applications yet. Create an event to get started!"
+              : `No performances with status ${status}.`}
           </Alert>
         ) : (
           <>
             <Table size="small" sx={{ background: "background.paper", borderRadius: 2 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Venue</TableCell>
-                  <TableCell>Event date</TableCell>
+                  <TableCell>Event / Venue</TableCell>
+                  <TableCell>Event Date</TableCell>
+                  <TableCell>Fee</TableCell>
                   <TableCell>Hours</TableCell>
-                  <TableCell>Note</TableCell>
+                  <TableCell>Notes</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {page.map((b) => (
-                  <TableRow key={b.id} hover>
-                    <TableCell>{b.venue?.name ?? "—"}</TableCell>
-                    <TableCell>{formatDateTimeCR(b.eventDate)}</TableCell>
-                    <TableCell>{b.hours ?? "—"}</TableCell>
-                    <TableCell sx={{ maxWidth: 360, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                      {b.note ?? "—"}
+                {page.map((p) => (
+                  <TableRow key={p.id} hover>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          {p.event.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {p.event.venue?.name || p.event.externalVenueName || "—"}
+                        </Typography>
+                      </Box>
                     </TableCell>
-                    <TableCell>{statusChip(b.status)}</TableCell>
+                    <TableCell>{formatDateTimeCR(p.event.eventDate)}</TableCell>
+                    <TableCell>
+                      {p.agreedFee 
+                        ? `₡${p.agreedFee.toLocaleString()}` 
+                        : p.proposedFee 
+                        ? `₡${p.proposedFee.toLocaleString()} (proposed)` 
+                        : "—"
+                      }
+                    </TableCell>
+                    <TableCell>{p.hours ?? "—"}</TableCell>
+                    <TableCell sx={{ maxWidth: 240, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                      {p.notes ?? "—"}
+                    </TableCell>
+                    <TableCell>{statusChip(p.status)}</TableCell>
                     <TableCell align="right">
                       {/* Artist can act on PENDING */}
-                      {b.status === "PENDING" && (
-                        <ArtistBookingActions bookingId={b.id} />
+                      {p.status === "PENDING" && (
+                        <ArtistBookingActions bookingId={p.id} />
                       )}
 
                       {/* View details — always available */}
                       <Button
                         component={Link}
-                        href={`/dashboard/artist/gigs/${b.id}`}
+                        href={`/dashboard/artist/gigs/${p.id}`}
                         variant="text"
                         size="small"
                         sx={{ ml: 1 }}
