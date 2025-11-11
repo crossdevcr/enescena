@@ -26,13 +26,13 @@ interface Event {
   description: string | null;
   eventDate: Date;
   endDate: Date | null;
-  hours: number | null;
-  budget: number | null;
+  totalHours: number | null;
+  totalBudget: number | null;
   status: string;
-  eventArtists: Array<{
+  performances: Array<{
     id: string;
     artistId: string;
-    confirmed: boolean;
+    status: string;
     artist: {
       id: string;
       name: string;
@@ -66,8 +66,8 @@ export default function EventActionButtons({ event, canManage }: Props) {
     description: event.description || "",
     eventDate: new Date(event.eventDate).toISOString().slice(0, 16),
     endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : "",
-    hours: event.hours?.toString() || "",
-    budget: event.budget?.toString() || "",
+    totalHours: event.totalHours?.toString() || "",
+    totalBudget: event.totalBudget?.toString() || "",
     status: event.status,
   });
 
@@ -95,8 +95,8 @@ export default function EventActionButtons({ event, canManage }: Props) {
           description: editForm.description || null,
           eventDate: editForm.eventDate,
           endDate: editForm.endDate || null,
-          hours: editForm.hours ? parseInt(editForm.hours) : null,
-          budget: editForm.budget ? parseInt(editForm.budget) : null,
+          totalHours: editForm.totalHours ? parseInt(editForm.totalHours) : null,
+          totalBudget: editForm.totalBudget ? parseInt(editForm.totalBudget) : null,
           status: editForm.status,
         }),
       });
@@ -190,7 +190,7 @@ export default function EventActionButtons({ event, canManage }: Props) {
       if (response.ok) {
         const data = await response.json();
         // Filter out artists already in the event
-        const existingArtistIds = event.eventArtists.map(ea => ea.artistId);
+        const existingArtistIds = event.performances.map((p: any) => p.artistId);
         const filteredArtists = data.artists?.filter((artist: any) => 
           !existingArtistIds.includes(artist.id)
         ) || [];
@@ -302,16 +302,16 @@ export default function EventActionButtons({ event, canManage }: Props) {
             <TextField
               label="Duration (hours)"
               type="number"
-              value={editForm.hours}
-              onChange={(e) => setEditForm({ ...editForm, hours: e.target.value })}
+              value={editForm.totalHours}
+              onChange={(e) => setEditForm({ ...editForm, totalHours: e.target.value })}
               fullWidth
             />
             
             <TextField
               label="Budget (₡)"
               type="number"
-              value={editForm.budget}
-              onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
+              value={editForm.totalBudget}
+              onChange={(e) => setEditForm({ ...editForm, totalBudget: e.target.value })}
               fullWidth
             />
             
