@@ -109,8 +109,8 @@ export default function NavBar() {
       roleSpecificItems.push(
         { text: 'Venue Profile', icon: <BusinessIcon />, href: '/dashboard/venue/profile' },
         { text: 'Events', icon: <EventIcon />, href: '/dashboard/venue/events' },
-        { text: 'Bookings', icon: <SettingsIcon />, href: '/dashboard/venue/bookings' },
-        { text: 'Book Artist', icon: <MusicIcon />, href: '/dashboard/venue/book' }
+        { text: 'Performances', icon: <SettingsIcon />, href: '/dashboard/venue/performances' },
+        { text: 'Invite Artists', icon: <MusicIcon />, href: '/dashboard/venue/invite' }
       );
     }
 

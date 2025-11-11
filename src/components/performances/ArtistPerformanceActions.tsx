@@ -3,23 +3,23 @@
 import * as React from "react";
 import { Button, Stack } from "@mui/material";
 
-export default function ArtistBookingActions({ bookingId }: { bookingId: string }) {
+export default function ArtistPerformanceActions({ performanceId }: { performanceId: string }) {
   const [busy, setBusy] = React.useState(false);
 
   async function update(action: "APPROVE" | "DECLINE") {
     setBusy(true);
     try {
-      const res = await fetch(`/api/performances/${bookingId}`, {
-        method: "PATCH",
+      const res = await fetch(`/api/performances/${performanceId}/respond`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action: action === "APPROVE" ? "accept" : "decline" }),
       });
       if (res.ok) {
         // Reload page to show new status
         window.location.reload();
       } else {
         const j = await res.json().catch(() => ({}));
-        alert(j?.message || "Failed to update performance");
+        alert(j?.error || "Failed to respond to performance invitation");
       }
     } finally {
       setBusy(false);

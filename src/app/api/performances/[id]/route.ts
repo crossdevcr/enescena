@@ -23,13 +23,23 @@ export async function PATCH(
     const workflows = new ApprovalWorkflows(prisma);
 
     switch (action) {
+      case "accept":
+      case "decline":
+        // Redirect to the proper respond endpoint
+        return NextResponse.redirect(new URL(`/api/performances/${performanceId}/respond`, req.url));
+        
       case "APPROVE":
-        const approveResult = await workflows.approvePerformance(performanceId, user.id);
-        return NextResponse.json(approveResult);
-
       case "DECLINE":
-        const declineResult = await workflows.declinePerformance(performanceId, user.id, reason);
-        return NextResponse.json(declineResult);
+        // Legacy support - map to new actions
+        const mappedAction = action === "APPROVE" ? "accept" : "decline";
+        let result;
+
+        if (mappedAction === "accept") {
+          result = await workflows.acceptPerformanceInvitation(performanceId, user.id);
+        } else {
+          result = await workflows.declinePerformanceInvitation(performanceId, user.id, reason);
+        }
+        return NextResponse.json(result);
 
       case "CANCEL":
         // Handle cancellation by updating status directly

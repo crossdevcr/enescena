@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { createBookingRequestsForEvent, cancelBookingRequestsForEvent } from "@/lib/booking/eventPublishing";
+// Note: Performance invitation functionality is now handled in ApprovalWorkflows
 
 /**
  * GET /api/events/[id]
@@ -29,13 +29,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     where: { id },
     include: {
       venue: { select: { id: true, name: true, slug: true } },
-      eventArtists: {
-        include: {
-          artist: { select: { id: true, name: true, slug: true } }
-        },
-        orderBy: { createdAt: "asc" }
-      },
-      bookings: {
+      performances: {
         include: {
           artist: { select: { id: true, name: true, slug: true } }
         },
@@ -50,7 +44,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   // Access control: venue owner or admin can see all details, artists can see if they're part of the event
   const isVenueOwner = user.venue && event.venueId === user.venue.id;
-  const isEventArtist = user.artist && event.eventArtists.some(ea => ea.artistId === user.artist?.id);
+  const isEventArtist = user.artist && event.performances.some(p => p.artistId === user.artist?.id);
   const isAdmin = user.role === "ADMIN";
 
   if (!isVenueOwner && !isEventArtist && !isAdmin) {
@@ -184,7 +178,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     where: { id },
     data: updateData,
     include: {
-      eventArtists: {
+      performances: {
         include: {
           artist: { select: { id: true, name: true, slug: true } }
         }
@@ -196,16 +190,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (status && currentEvent && status !== currentEvent.status) {
     try {
       if (status === "PUBLISHED") {
-        // Create booking requests for all artists when event is published
-        await createBookingRequestsForEvent(id);
-      } else if (currentEvent.status === "PUBLISHED" && ["DRAFT", "CANCELLED"].includes(status)) {
-        // Cancel booking requests when unpublishing or cancelling
-        await cancelBookingRequestsForEvent(id);
+        // Note: Performance invitations are now handled through ApprovalWorkflows
+        console.log("Event published - performance invitations should be sent through ApprovalWorkflows");
+      } else if (status === "CANCELLED") {
+        // Cancel all pending performance invitations when event is cancelled
+        const { ApprovalWorkflows } = await import("@/lib/events/approvalWorkflows");
+        const workflows = new ApprovalWorkflows(prisma);
+        const cancellationResult = await workflows.cancelAllPerformancesForEvent(id, "Event has been cancelled");
+        console.log(`Event cancelled: ${cancellationResult.message}`);
+      } else if (currentEvent.status === "PUBLISHED" && status === "DRAFT") {
+        // Note: When unpublishing (but not cancelling), we might want different behavior
+        console.log("Event unpublished - consider what to do with pending invitations");
       }
     } catch (error) {
       console.error("Error handling event status change:", error);
-      // Don't fail the whole request, just log the error
-      // The event status was already updated successfully
     }
   }
 
@@ -248,15 +246,15 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  // Check if event has bookings
-  const bookingsCount = await prisma.booking.count({
+  // Check if event has performances
+  const performancesCount = await prisma.performance.count({
     where: { eventId: id }
   });
 
-  if (bookingsCount > 0) {
+  if (performancesCount > 0) {
     return NextResponse.json({ 
       error: "validation_error",
-      message: "Cannot delete event with existing bookings" 
+      message: "Cannot delete event with existing performances" 
     }, { status: 400 });
   }
 

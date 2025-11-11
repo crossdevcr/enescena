@@ -77,15 +77,15 @@ const navigationItems: NavigationItem[] = [
     roles: ['VENUE']
   },
   {
-    text: 'Bookings',
+    text: 'Performances',
     icon: <BookingIcon />,
-    href: '/dashboard/venue/bookings',
+    href: '/dashboard/venue/performances',
     roles: ['VENUE']
   },
   {
-    text: 'Book Artist',
+    text: 'Invite Artists',
     icon: <MusicIcon />,
-    href: '/dashboard/venue/book',
+    href: '/dashboard/venue/invite',
     roles: ['VENUE']
   },
   {

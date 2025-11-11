@@ -122,22 +122,22 @@ export default function EventPerformanceManagement({
         body: JSON.stringify({
           eventId,
           artistId: formData.artistId,
-          fee: formData.fee ? parseFloat(formData.fee) : null,
+          proposedFee: formData.fee ? parseFloat(formData.fee) : null,
           hours: formData.hours ? parseFloat(formData.hours) : null,
-          notes: formData.notes || null,
+          venueNotes: formData.notes || null,
         }),
       });
 
       if (response.ok) {
         setAddDialogOpen(false);
         resetForm();
-        window.location.reload(); // Refresh to show new performance
+        window.location.reload(); // Refresh to show new invitation
       } else {
         const errorData = await response.json();
-        setError(errorData.error || "Failed to add performance application");
+        setError(errorData.error || "Failed to invite artist");
       }
     } catch (error) {
-      setError("Failed to add performance application");
+      setError("Failed to invite artist");
     } finally {
       setLoading(false);
     }
@@ -220,7 +220,7 @@ export default function EventPerformanceManagement({
     <Stack spacing={2}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Typography variant="h6">
-          Performance Applications ({performances.length})
+          Performance Invitations ({performances.length})
         </Typography>
         
         {canManage && (
@@ -232,7 +232,7 @@ export default function EventPerformanceManagement({
               setAddDialogOpen(true);
             }}
           >
-            Add Artist
+            Invite Artist
           </Button>
         )}
       </Box>
@@ -245,7 +245,7 @@ export default function EventPerformanceManagement({
 
       {performances.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          No performance applications yet.
+          No performance invitations yet.
         </Typography>
       ) : (
         <Stack spacing={2}>
@@ -320,7 +320,7 @@ export default function EventPerformanceManagement({
 
       {/* Add Performance Dialog */}
       <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Performance Application</DialogTitle>
+        <DialogTitle>Invite Artist to Perform</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             {error && <Alert severity="error">{error}</Alert>}
@@ -381,7 +381,7 @@ export default function EventPerformanceManagement({
             Cancel
           </Button>
           <Button onClick={handleSubmitAdd} variant="contained" disabled={loading}>
-            {loading ? "Adding..." : "Add Application"}
+            {loading ? "Sending Invitation..." : "Send Invitation"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -171,7 +171,7 @@ export function canUserCreateEventAtVenue(
     return true;
   }
   
-  // Artists can create events with external venues or request venue bookings
+  // Artists can create events with external venues or request events at venues
   if (userRole === "ARTIST") {
     return true; // Artists can always create events (may need venue approval)
   }

@@ -280,7 +280,7 @@ export default function EventActionButtons({ event, canManage }: Props) {
         <DialogContent>
           <Typography>
             Are you sure you want to cancel this event? This action cannot be undone.
-            All pending booking requests will be cancelled.
+            All pending performance invitations will be cancelled.
           </Typography>
         </DialogContent>
         <DialogActions>

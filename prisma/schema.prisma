@@ -184,14 +184,14 @@ model Performance {
 }
 
 enum NotificationType {
-  EVENT_VENUE_APPROVAL_REQUEST    // Artist requests venue approval for event
-  EVENT_VENUE_APPROVED           // Venue approved artist's event
-  EVENT_VENUE_DECLINED           // Venue declined artist's event
-  PERFORMANCE_APPLICATION        // Artist applied to perform at event
-  PERFORMANCE_ACCEPTED          // Venue accepted artist's performance
-  PERFORMANCE_DECLINED          // Venue declined artist's performance
-  PERFORMANCE_CANCELLED         // Performance was cancelled
-  EVENT_STATUS_CHANGE           // Event status changed
+  EVENT_REQUEST                    // Artist requests event at venue
+  EVENT_REQUEST_APPROVED          // Venue approved artist's event request
+  EVENT_REQUEST_DECLINED          // Venue declined artist's event request
+  PERFORMANCE_INVITATION          // Venue invites artist to perform
+  PERFORMANCE_INVITATION_ACCEPTED // Artist accepted performance invitation
+  PERFORMANCE_INVITATION_DECLINED // Artist declined performance invitation
+  PERFORMANCE_CANCELLED           // Performance was cancelled
+  EVENT_STATUS_CHANGE             // Event status changed
 }
 
 model Notification {

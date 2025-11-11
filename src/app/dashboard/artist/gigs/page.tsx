@@ -17,9 +17,9 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import ArtistBookingActions from "@/components/booking/ArtistBookingActions";
+import ArtistPerformanceActions from "@/components/performances/ArtistPerformanceActions";
 import StatusTabs from "@/components/common/StatusTabs";
-import ArtistEventCreationDialog from "@/components/events/ArtistEventCreationDialog";
+
 import { unstable_noStore as noStore } from "next/cache";
 
 function formatDateTimeCR(d: Date) {
@@ -145,13 +145,18 @@ export default async function ArtistGigsPage({
         <Stack spacing={2}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h4" fontWeight={700}>
-            My Performances
+            Performance Invitations
           </Typography>
           
           <Box sx={{ minWidth: 200 }}>
-            <ArtistEventCreationDialog 
-              artistId={user.artist.id} 
-            />
+            <Button
+              component={Link}
+              href="/venues"
+              variant="contained"
+              size="large"
+            >
+              Browse Venues
+            </Button>
           </Box>
         </Box>
 
@@ -173,8 +178,8 @@ export default async function ArtistGigsPage({
         {page.length === 0 ? (
           <Alert severity="info">
             {status === "ALL"
-              ? "You don't have any performance applications yet. Create an event to get started!"
-              : `No performances with status ${status}.`}
+              ? "You don't have any performance invitations yet. Venues will invite you to perform at their events!"
+              : `No performance invitations with status ${status}.`}
           </Alert>
         ) : (
           <>
@@ -220,7 +225,7 @@ export default async function ArtistGigsPage({
                     <TableCell align="right">
                       {/* Artist can act on PENDING */}
                       {p.status === "PENDING" && (
-                        <ArtistBookingActions bookingId={p.id} />
+                        <ArtistPerformanceActions performanceId={p.id} />
                       )}
 
                       {/* View details — always available */}

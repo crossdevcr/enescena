@@ -3,7 +3,7 @@ import { formatPrice } from "@/lib/format";
 import { notFound } from "next/navigation";
 import { Avatar, Box, Button, Chip, Container, Stack, Typography } from "@mui/material";
 import Link from "next/link";
-import RequestBookingDialog from "@/components/booking/RequestBookingDialog";
+// Note: RequestBookingDialog replaced with venue-initiated invitations
 
 type PageProps = { params: { slug: string } };
 
@@ -52,10 +52,16 @@ export default async function ArtistPage({ params }: PageProps) {
           </Typography>
         )}
 
-        {/* Booking CTA */}
+        {/* Note: Booking is now handled through venue event management */}
         <Box>
-          {/* If you want to show only to VENUE later, we’ll gate it in Step 2/3 */}
-          <RequestBookingDialog artistId={artist.id} />
+          <Button
+            component={Link}
+            href="/venues"
+            variant="contained"
+            size="large"
+          >
+            Browse Venues
+          </Button>
         </Box>
       </Stack>
     </Container>

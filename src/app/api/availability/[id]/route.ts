@@ -3,8 +3,8 @@ import { cookies } from "next/headers";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   const jar = await cookies();
   const idToken = jar.get("id_token")?.value;

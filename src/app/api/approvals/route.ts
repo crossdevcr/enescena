@@ -152,9 +152,9 @@ export async function POST(request: NextRequest) {
     switch (type) {
       case 'event':
         if (action === 'approve') {
-          result = await approvals.approveEventForVenue(itemId, user.id)
+          result = await approvals.approveEventRequest(itemId, user.id)
         } else if (action === 'decline') {
-          result = await approvals.declineEventForVenue(itemId, user.id, reason)
+          result = await approvals.declineEventRequest(itemId, user.id, reason)
         } else {
           return NextResponse.json(
             { success: false, error: 'Invalid action for event' },
@@ -165,9 +165,9 @@ export async function POST(request: NextRequest) {
 
       case 'performance':
         if (action === 'approve') {
-          result = await approvals.approvePerformance(itemId, user.id)
+          result = await approvals.acceptPerformanceInvitation(itemId, user.id)
         } else if (action === 'decline') {
-          result = await approvals.declinePerformance(itemId, user.id, reason)
+          result = await approvals.declinePerformanceInvitation(itemId, user.id, reason)
         } else {
           return NextResponse.json(
             { success: false, error: 'Invalid action for performance' },

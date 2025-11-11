@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 type Props = {
   statuses: string[];       // e.g. ["ALL","PENDING","ACCEPTED",...]
-  basePath: string;         // e.g. "/dashboard/venue/bookings"
+  basePath: string;         // e.g. "/dashboard/venue/performances"
   queryKey?: string;        // default: "status"
   omitQueryForFirst?: boolean; // default: true
 };

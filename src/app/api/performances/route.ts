@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/performances
- * Create a new performance (artist applies to event)
+ * Venue invites artist to perform at event
  */
 export async function POST(request: NextRequest) {
   const jar = await cookies()
@@ -89,54 +89,29 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Check authorization based on user role
-    let targetArtistId: string;
-    let performanceData: any;
-    
-    if (user.role === 'ARTIST' && user.artist) {
-      // Artist applying to an event
-      targetArtistId = user.artist.id;
-      performanceData = {
-        eventId: body.eventId,
-        artistId: user.artist.id,
-        proposedFee: body.proposedFee,
-        hours: body.hours,
-        notes: body.notes,
-        artistNotes: body.artistNotes,
-      };
-    } else if (user.role === 'VENUE' && user.venue) {
-      // Venue adding an artist to their event
-      if (!body.artistId) {
-        return NextResponse.json({ error: 'Artist ID is required for venue users' }, { status: 400 })
-      }
-      
-      // Verify the event belongs to this venue
-      const event = await prisma.event.findUnique({
-        where: { id: body.eventId }
-      });
-      
-      if (!event || event.venueId !== user.venue.id) {
-        return NextResponse.json({ error: 'You can only add artists to your own events' }, { status: 403 })
-      }
-      
-      targetArtistId = body.artistId;
-      performanceData = {
-        eventId: body.eventId,
-        artistId: body.artistId,
-        proposedFee: body.fee || body.proposedFee,
-        hours: body.hours,
-        notes: body.notes,
-        venueNotes: body.notes, // Venue-added notes
-      };
-    } else {
-      return NextResponse.json({ error: 'Only artists and venue owners can create performances' }, { status: 403 })
+    // Only venues can invite artists
+    if (user.role !== 'VENUE' || !user.venue) {
+      return NextResponse.json({ error: 'Only venue owners can invite artists' }, { status: 403 })
     }
 
-    // Use approval workflow system
+    if (!body.artistId || !body.eventId) {
+      return NextResponse.json({ error: 'Event ID and Artist ID are required' }, { status: 400 })
+    }
+
+    const performanceData = {
+      proposedFee: body.proposedFee,
+      hours: body.hours,
+      venueNotes: body.venueNotes,
+      startTime: body.startTime,
+      endTime: body.endTime
+    };
+
+        // Use approval workflow system
     const approvals = new ApprovalWorkflows(prisma)
-    const result = await approvals.applyForPerformance(
+    const result = await approvals.inviteArtistToPerform(
       body.eventId, 
-      targetArtistId, 
+      body.artistId, 
+      user.id,
       performanceData
     )
 
@@ -151,7 +126,7 @@ export async function POST(request: NextRequest) {
           status: true,
           proposedFee: true,
           hours: true,
-          notes: true,
+          venueNotes: true,
           createdAt: true,
           event: {
             select: {
@@ -182,12 +157,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
   } catch (error: any) {
-    console.error('Performance application error:', error)
+    console.error('Artist invitation error:', error)
     
     return NextResponse.json({
       success: false,
-      error: 'application_failed',
-      message: 'Failed to submit performance application'
+      error: 'invitation_failed',
+      message: 'Failed to invite artist'
     }, { status: 500 })
   }
 }

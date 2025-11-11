@@ -225,11 +225,8 @@ export async function POST(req: Request) {
       }
     });
 
-    // If artist creating event at internal venue, request venue approval
-    if (needsVenueApproval && body.venueId) {
-      const approvals = new ApprovalWorkflows(prisma)
-      await approvals.requestVenueApproval(event.id, body.venueId)
-    }
+    // If artist creating event at internal venue, the event starts in PENDING_VENUE_APPROVAL
+    // and venue gets notified automatically via the requestEventAtVenue workflow
 
     return NextResponse.json({ 
       success: true, 
