@@ -175,7 +175,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
         return { success: false, message: "Event not found" };
       }
 
-      if (!["SEEKING_ARTISTS", "PENDING"].includes(event.status)) {
+      if (!["DRAFT", "SEEKING_ARTISTS", "PENDING"].includes(event.status)) {
         return { success: false, message: "Event is not accepting new artists" };
       }
 
