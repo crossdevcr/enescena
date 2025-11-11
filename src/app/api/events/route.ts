@@ -5,9 +5,35 @@ import { cookies } from "next/headers";
 
 /**
  * GET /api/events
- * List events for the authenticated venue
+ * List events - supports filtering by creator (venue/artist) and public events
  */
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const publicOnly = searchParams.get('public') === 'true';
+  const createdByMe = searchParams.get('createdByMe') === 'true';
+
+  // For public events, no authentication required
+  if (publicOnly) {
+    const events = await prisma.event.findMany({
+      where: { 
+        status: 'PUBLISHED'
+      },
+      include: {
+        venue: { select: { id: true, name: true, slug: true, city: true } },
+        performances: {
+          include: {
+            artist: { select: { id: true, name: true, slug: true } }
+          },
+          orderBy: { createdAt: "asc" }
+        },
+      },
+      orderBy: { eventDate: "desc" },
+    });
+
+    return NextResponse.json({ events });
+  }
+
+  // For user-specific events, require authentication
   const jar = await cookies();
   const idToken = jar.get("id_token")?.value;
   if (!idToken) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -18,24 +44,52 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { email },
-    include: { venue: true },
+    include: { venue: true, artist: true },
   });
-  if (!user || user.role !== "VENUE" || !user.venue) {
+  if (!user) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  let whereClause: any = {};
+
+  if (createdByMe) {
+    // Events created by this user
+    whereClause.createdBy = user.id;
+  } else {
+    // Events relevant to this user based on their role
+    if (user.role === "VENUE" && user.venue) {
+      whereClause = {
+        OR: [
+          { venueId: user.venue.id }, // Events at their venue
+          { createdBy: user.id },     // Events they created
+        ]
+      };
+    } else if (user.role === "ARTIST" && user.artist) {
+      whereClause = {
+        OR: [
+          { createdBy: user.id },     // Events they created
+          { performances: { some: { artistId: user.artist.id } } }, // Events they're performing in
+          { status: "SEEKING_ARTISTS" }, // Events seeking artists
+        ]
+      };
+    } else {
+      // Admin or other roles see all events
+      whereClause = {};
+    }
+  }
+
   const events = await prisma.event.findMany({
-    where: { venueId: user.venue.id },
+    where: whereClause,
     include: {
-      eventArtists: {
+      venue: { select: { id: true, name: true, slug: true, city: true } },
+      creator: { select: { id: true, name: true, role: true } },
+      performances: {
         include: {
           artist: { select: { id: true, name: true, slug: true } }
         },
         orderBy: { createdAt: "asc" }
       },
-      _count: {
-        select: { bookings: true }
-      }
+      
     },
     orderBy: { eventDate: "desc" },
   });
