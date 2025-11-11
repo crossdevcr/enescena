@@ -60,7 +60,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  let whereClause: any = {};
+  let whereClause: Record<string, unknown> = {};
 
   if (createdByMe) {
     // Events created by this user

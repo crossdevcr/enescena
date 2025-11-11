@@ -72,7 +72,7 @@ export default async function EventDetailsPage({
 
   // Access control: venue owner or admin can manage, artists can view if part of event
   const isVenueOwner = user.venue && event.venue?.userId === user.id;
-  const isPerformingArtist = user.artist && event.performances.some((p: any) => p.artistId === user.artist?.id);
+  const isPerformingArtist = user.artist && event.performances.some((p: { artistId?: string }) => p.artistId === user.artist?.id);
   const isAdmin = user.role === "ADMIN";
 
   if (!isVenueOwner && !isPerformingArtist && !isAdmin) {

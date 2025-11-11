@@ -122,7 +122,7 @@ export function useCreateEvent() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (eventData: any) => {
+    mutationFn: async (eventData: Record<string, unknown>) => {
       const response = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

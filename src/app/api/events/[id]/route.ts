@@ -101,7 +101,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     status
   } = body;
 
-  const updateData: any = {};
+  const updateData: Record<string, unknown> = {};
 
   if (title !== undefined) updateData.title = String(title);
   if (description !== undefined) updateData.description = description ? String(description) : null;

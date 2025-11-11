@@ -79,17 +79,19 @@ export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
       success: true,
       message: "User registered successfully. Please check your email for confirmation code.",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Sign up error:", error);
     
     let message = "Registration failed. Please try again.";
     
-    if (error.name === "UsernameExistsException") {
-      message = "An account with this email already exists.";
-    } else if (error.name === "InvalidPasswordException") {
-      message = "Password does not meet requirements.";
-    } else if (error.name === "InvalidParameterException") {
-      message = "Invalid parameter. Please contact support.";
+    if (error instanceof Error) {
+      if (error.name === "UsernameExistsException") {
+        message = "This email is already registered.";
+      } else if (error.name === "InvalidPasswordException") {
+        message = "Password must be at least 8 characters with uppercase, lowercase, number, and special character.";
+      } else if (error.name === "InvalidParameterException") {
+        message = "Invalid registration data provided.";
+      }
     }
 
     return {
@@ -119,17 +121,19 @@ export async function confirmSignUp(email: string, confirmationCode: string): Pr
       success: true,
       message: "Email confirmed successfully. You can now sign in.",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Confirm sign up error:", error);
     
     let message = "Email confirmation failed.";
     
-    if (error.name === "CodeMismatchException") {
-      message = "Invalid confirmation code.";
-    } else if (error.name === "ExpiredCodeException") {
-      message = "Confirmation code has expired.";
-    } else if (error.name === "UserNotFoundException") {
-      message = "User not found.";
+    if (error instanceof Error) {
+      if (error.name === "CodeMismatchException") {
+        message = "Invalid confirmation code.";
+      } else if (error.name === "ExpiredCodeException") {
+        message = "Confirmation code has expired. Please request a new one.";
+      } else if (error.name === "UserNotFoundException") {
+        message = "User not found.";
+      }
     }
 
     return {
@@ -184,19 +188,21 @@ export async function signInUser(params: SignInParams): Promise<AuthResult> {
       success: false,
       message: "Authentication failed",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Sign in error:", error);
     
     let message = "Sign in failed. Please check your credentials.";
     
-    if (error.name === "NotAuthorizedException") {
-      message = "Incorrect email or password.";
-    } else if (error.name === "UserNotConfirmedException") {
-      message = "Please confirm your email before signing in.";
-    } else if (error.name === "UserNotFoundException") {
-      message = "User not found.";
-    } else if (error.name === "TooManyRequestsException") {
-      message = "Too many sign in attempts. Please try again later.";
+    if (error instanceof Error) {
+      if (error.name === "NotAuthorizedException") {
+        message = "Incorrect email or password.";
+      } else if (error.name === "UserNotConfirmedException") {
+        message = "Please confirm your email before signing in.";
+      } else if (error.name === "UserNotFoundException") {
+        message = "User not found.";
+      } else if (error.name === "TooManyRequestsException") {
+        message = "Too many sign in attempts. Please try again later.";
+      }
     }
 
     return {
@@ -267,7 +273,7 @@ export async function refreshAuthToken(refreshToken: string): Promise<AuthResult
       success: false,
       message: "Token refresh failed",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Token refresh error:", error);
     
     return {
@@ -294,19 +300,19 @@ export async function resendConfirmationCode(email: string): Promise<AuthResult>
       success: true,
       message: "Confirmation code resent successfully",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Resend confirmation code error:", error);
     
     let message = "Failed to resend confirmation code";
     
-    if (error.name === "UserNotFoundException") {
-      message = "User not found.";
-    } else if (error.name === "InvalidParameterException") {
-      message = "User is already confirmed.";
-    } else if (error.name === "TooManyRequestsException") {
-      message = "Too many requests. Please try again later.";
-    } else if (error.name === "LimitExceededException") {
-      message = "Daily limit for confirmation codes exceeded.";
+    if (error instanceof Error) {
+      if (error.name === "UserNotFoundException") {
+        message = "User not found.";
+      } else if (error.name === "InvalidParameterException") {
+        message = "Invalid parameter.";
+      } else if (error.name === "LimitExceededException") {
+        message = "Too many requests. Please wait before trying again.";
+      }
     }
 
     return {

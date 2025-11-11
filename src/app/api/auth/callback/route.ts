@@ -64,7 +64,7 @@ export async function GET(req: Request) {
     });
   } else {
     await prisma.user.create({
-      data: { email, name, role: defaultRole as any },
+      data: { email, name, role: defaultRole as "ARTIST" | "VENUE" | "ADMIN" },
     });
   }
 
