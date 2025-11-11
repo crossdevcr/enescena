@@ -8,7 +8,7 @@ import { ApprovalWorkflows } from '@/lib/events/approvalWorkflows'
  * GET /api/approvals
  * Get pending approvals for the authenticated user
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   const jar = await cookies()
   const idToken = jar.get('id_token')?.value
   if (!idToken) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const approvals = new ApprovalWorkflows(prisma)
     
     // Get different types of approvals based on user role
-    let pendingApprovals: any = {
+    const pendingApprovals: Record<string, unknown[]> = {
       eventApprovals: [],
       performanceApprovals: [],
       notifications: []

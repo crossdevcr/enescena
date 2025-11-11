@@ -97,7 +97,7 @@ export default function RequestEventDialog({ venueId, venueName }: RequestEventD
       } else {
         setError(result.error || "Failed to send event request");
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setSubmitting(false);

@@ -3,7 +3,7 @@ import { getAccessToken } from "@/lib/auth/cookies";
 import { getUserFromToken } from "@/lib/auth/cognitoSdk";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const accessToken = await getAccessToken();
     

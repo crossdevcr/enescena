@@ -47,7 +47,6 @@ export default function EventPerformanceManagement({
   eventId, 
   performances, 
   canManage, 
-  currentUserId,
   eventStatus
 }: Props) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -158,7 +157,7 @@ export default function EventPerformanceManagement({
         const errorData = await response.json();
         setError(errorData.error || "Failed to invite artist");
       }
-    } catch (error) {
+    } catch {
       setError("Failed to invite artist");
     } finally {
       setLoading(false);
@@ -193,7 +192,7 @@ export default function EventPerformanceManagement({
         const errorData = await response.json();
         setError(errorData.error || "Failed to update performance");
       }
-    } catch (error) {
+    } catch {
       setError("Failed to update performance");
     } finally {
       setLoading(false);
@@ -215,7 +214,7 @@ export default function EventPerformanceManagement({
       } else {
         alert("Failed to remove performance");
       }
-    } catch (error) {
+    } catch {
       alert("Failed to remove performance");
     }
   };

@@ -1,6 +1,5 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useRouter } from 'next/navigation';
 import EventActionButtons from './EventActionButtons';
 
 // Mock Next.js router
@@ -109,6 +108,7 @@ describe('EventActionButtons', () => {
   describe('Loading State', () => {
     it('should disable edit button during loading state', async () => {
       // Mock a slow fetch response to simulate loading
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global.fetch as any).mockImplementationOnce(() => 
         new Promise(resolve => 
           setTimeout(() => resolve({

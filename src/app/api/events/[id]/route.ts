@@ -149,7 +149,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Update slug if title changed
   if (title !== undefined) {
-    let slug = String(title)
+    const slug = String(title)
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9\s-]/g, "")
