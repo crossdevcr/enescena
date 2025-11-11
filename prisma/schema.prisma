@@ -13,18 +13,22 @@ enum UserRole {
   ADMIN
 }
 
-enum BookingStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  CANCELLED
-  COMPLETED
+enum PerformanceStatus {
+  PENDING      // Waiting for artist/venue confirmation
+  CONFIRMED    // Both parties agreed
+  DECLINED     // Artist declined or venue rejected
+  CANCELLED    // Cancelled after confirmation
+  COMPLETED    // Performance finished
 }
 
 enum EventStatus {
-  DRAFT
-  PUBLISHED
-  CANCELLED
+  DRAFT          // Being created
+  SEEKING_VENUE  // Artist looking for venue
+  SEEKING_ARTISTS // Venue looking for more artists
+  PENDING        // Waiting for confirmations
+  CONFIRMED      // All parties agreed
+  PUBLISHED      // Public and promoted
+  CANCELLED      
   COMPLETED
 }
 
@@ -36,8 +40,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  artist Artist?
-  venue  Venue?
+  artist       Artist?
+  venue        Venue?
+  createdEvents Event[] @relation("EventCreator")
 }
 
 model Artist {
@@ -49,16 +54,15 @@ model Artist {
   slug     String   @unique
   city     String?
   genres   String[] // Postgres text[]
-  rate     Int?
+  rate     Int?     // Default hourly rate
   imageUrl String?
   bio      String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  bookings             Booking[]
-  ArtistUnavailability ArtistUnavailability[]
-  eventArtists         EventArtist[]
+  performances         Performance[]
+  unavailabilities     ArtistUnavailability[]
 }
 
 model Venue {
@@ -76,32 +80,10 @@ model Venue {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  bookings Booking[]
-  events   Event[]
+  hostedEvents Event[] @relation("VenueHostedEvents")
 }
 
-model Booking {
-  id        String        @id @default(cuid())
-  artistId  String
-  venueId   String
-  eventId   String? // Optional: links to event if booking is part of an event
-  eventDate DateTime // was `date`
-  hours     Int? // new (optional)
-  note      String? // new (optional)
-  status    BookingStatus @default(PENDING)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  artist Artist @relation(fields: [artistId], references: [id])
-  venue  Venue  @relation(fields: [venueId], references: [id])
-  event  Event? @relation(fields: [eventId], references: [id])
-
-  @@index([artistId, createdAt])
-  @@index([venueId, createdAt])
-  @@index([eventId, createdAt])
-  @@index([status, createdAt])
-}
 
 model ArtistUnavailability {
   id       String @id @default(cuid())
@@ -119,32 +101,47 @@ model ArtistUnavailability {
 }
 
 model Event {
-  id      String      @id @default(cuid())
-  venueId String
-  venue   Venue       @relation(fields: [venueId], references: [id])
-
+  id        String      @id @default(cuid())
+  
+  // Creator (can be artist or venue user)
+  createdBy String
+  creator   User        @relation("EventCreator", fields: [createdBy], references: [id])
+  
+  // Venue (optional - can be external)
+  venueId   String?
+  venue     Venue?      @relation("VenueHostedEvents", fields: [venueId], references: [id])
+  
+  // External venue details (when venue not in system)
+  externalVenueName    String?
+  externalVenueAddress String?
+  externalVenueCity    String?
+  externalVenueContact String? // Phone/email for external venue
+  
+  // Event details
   title       String
   slug        String      @unique
   description String?
   eventDate   DateTime
   endDate     DateTime? // Optional end date for multi-day events
-  hours       Int? // Expected duration in hours
-  budget      Int? // Total budget for the event
+  totalHours  Int?      // Total event duration
+  totalBudget Int?      // Total budget for all performances
   imageUrl    String?
   status      EventStatus @default(DRAFT)
+  isPublic    Boolean @default(true) // Public events vs private gigs
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  eventArtists EventArtist[]
-  bookings     Booking[]
+  performances Performance[]
 
+  @@index([createdBy, eventDate])
   @@index([venueId, eventDate])
   @@index([status, eventDate])
   @@index([slug])
+  @@index([eventDate, isPublic])
 }
 
-model EventArtist {
+model Performance {
   id       String @id @default(cuid())
   eventId  String
   artistId String
@@ -152,11 +149,24 @@ model EventArtist {
   event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
 
-  // Artist-specific details for this event
-  fee          Int? // Agreed fee for this artist
-  hours        Int? // Hours this artist will perform
-  notes        String?
-  confirmed    Boolean @default(false)
+  // Performance details
+  agreedFee    Int?              // Final agreed payment
+  proposedFee  Int?              // Initial fee proposal
+  hours        Int?              // Performance duration
+  startTime    DateTime?         // Specific start time if different from event
+  endTime      DateTime?         // Specific end time
+  
+  // Status and communication
+  status       PerformanceStatus @default(PENDING)
+  notes        String?           // General notes
+  artistNotes  String?           // Artist-specific requirements
+  venueNotes   String?           // Venue-specific notes
+  
+  // Contract details
+  equipmentProvided String?      // What equipment venue provides
+  soundcheckTime   DateTime?    // Soundcheck schedule
+  paymentTerms     String?      // Payment schedule details
+  cancellationTerms String?     // Cancellation policy
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -164,4 +174,6 @@ model EventArtist {
   @@unique([eventId, artistId]) // Prevent duplicate artist assignments
   @@index([eventId])
   @@index([artistId])
+  @@index([status, createdAt])
+  @@index([artistId, status])
 }
