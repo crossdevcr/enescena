@@ -80,30 +80,63 @@ export async function POST(request: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { email },
-    include: { artist: true }
+    include: { artist: true, venue: true }
   })
-  if (!user || user.role !== 'ARTIST' || !user.artist) {
+  if (!user) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
   try {
     const body = await request.json()
     
-    // Use artist ID from authenticated user
-    const performanceData = {
-      eventId: body.eventId,
-      artistId: user.artist.id,
-      proposedFee: body.proposedFee,
-      hours: body.hours,
-      notes: body.notes,
-      artistNotes: body.artistNotes,
+    // Check authorization based on user role
+    let targetArtistId: string;
+    let performanceData: any;
+    
+    if (user.role === 'ARTIST' && user.artist) {
+      // Artist applying to an event
+      targetArtistId = user.artist.id;
+      performanceData = {
+        eventId: body.eventId,
+        artistId: user.artist.id,
+        proposedFee: body.proposedFee,
+        hours: body.hours,
+        notes: body.notes,
+        artistNotes: body.artistNotes,
+      };
+    } else if (user.role === 'VENUE' && user.venue) {
+      // Venue adding an artist to their event
+      if (!body.artistId) {
+        return NextResponse.json({ error: 'Artist ID is required for venue users' }, { status: 400 })
+      }
+      
+      // Verify the event belongs to this venue
+      const event = await prisma.event.findUnique({
+        where: { id: body.eventId }
+      });
+      
+      if (!event || event.venueId !== user.venue.id) {
+        return NextResponse.json({ error: 'You can only add artists to your own events' }, { status: 403 })
+      }
+      
+      targetArtistId = body.artistId;
+      performanceData = {
+        eventId: body.eventId,
+        artistId: body.artistId,
+        proposedFee: body.fee || body.proposedFee,
+        hours: body.hours,
+        notes: body.notes,
+        venueNotes: body.notes, // Venue-added notes
+      };
+    } else {
+      return NextResponse.json({ error: 'Only artists and venue owners can create performances' }, { status: 403 })
     }
 
     // Use approval workflow system
     const approvals = new ApprovalWorkflows(prisma)
     const result = await approvals.applyForPerformance(
       body.eventId, 
-      user.artist.id, 
+      targetArtistId, 
       performanceData
     )
 
