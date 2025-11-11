@@ -14,7 +14,16 @@ export function parseGenres(input: string) {
     .filter(Boolean);
 }
 
-export async function ensureUniqueArtistSlug(base: string, prisma: any) {
+type PrismaClient = {
+  artist: {
+    findUnique: (args: { where: { slug: string } }) => Promise<unknown>;
+  };
+  venue: {
+    findUnique: (args: { where: { slug: string } }) => Promise<unknown>;
+  };
+};
+
+export async function ensureUniqueArtistSlug(base: string, prisma: PrismaClient) {
   let slug = base, i = 1;
   while (await prisma.artist.findUnique({ where: { slug } })) {
     slug = `${base}-${++i}`;
@@ -22,7 +31,7 @@ export async function ensureUniqueArtistSlug(base: string, prisma: any) {
   return slug;
 }
 
-export async function ensureUniqueVenueSlug(base: string, prisma: any) {
+export async function ensureUniqueVenueSlug(base: string, prisma: PrismaClient) {
   let slug = base, i = 1;
   while (await prisma.venue.findUnique({ where: { slug } })) {
     slug = `${base}-${++i}`;

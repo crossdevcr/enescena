@@ -94,7 +94,7 @@ export async function POST(
         error: result.message
       }, { status: 400 })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Event request response error:', error)
     
     return NextResponse.json({

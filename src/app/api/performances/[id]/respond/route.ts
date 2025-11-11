@@ -91,7 +91,7 @@ export async function POST(
         error: result.message
       }, { status: 400 })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Performance invitation response error:', error)
     
     return NextResponse.json({

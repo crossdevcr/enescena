@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
         error: result.message
       }, { status: 400 })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Artist invitation error:', error)
     
     return NextResponse.json({
