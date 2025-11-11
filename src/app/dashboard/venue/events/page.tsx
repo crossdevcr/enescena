@@ -55,14 +55,14 @@ export default async function VenueEventsPage() {
   const events = await prisma.event.findMany({
     where: { venueId: user.venue.id },
     include: {
-      eventArtists: {
+      performances: {
         include: {
           artist: { select: { id: true, name: true, slug: true } }
         },
         orderBy: { createdAt: "asc" }
       },
       _count: {
-        select: { bookings: true }
+        select: { performances: true }
       }
     },
     orderBy: { eventDate: "desc" },
@@ -145,7 +145,7 @@ export default async function VenueEventsPage() {
 
                     <Typography variant="body2" color="text.secondary" noWrap>
                       {formatDateTimeCR(event.eventDate)}
-                      {event.hours && ` • ${event.hours}h`}
+                      {event.totalHours && ` • ${event.totalHours}h`}
                     </Typography>
 
                     {event.description && (
@@ -161,32 +161,32 @@ export default async function VenueEventsPage() {
 
                     <Stack direction="row" spacing={1} flexWrap="wrap">
                       <Typography variant="caption" color="text.secondary">
-                        Artists: {event.eventArtists.length}
+                        Performances: {event.performances.length}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        • Bookings: {event._count.bookings}
+                      <Typography variant="body2" color="text.secondary">
+                        • Applications: {event._count.performances}
                       </Typography>
-                      {event.budget && (
-                        <Typography variant="caption" color="text.secondary">
-                          • Budget: ₡{event.budget.toLocaleString()}
+                      {event.totalBudget && (
+                        <Typography variant="body2" color="text.secondary">
+                          • Budget: ₡{event.totalBudget.toLocaleString()}
                         </Typography>
                       )}
                     </Stack>
 
-                    {event.eventArtists.length > 0 && (
+                    {event.performances.length > 0 && (
                       <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {event.eventArtists.slice(0, 3).map((ea) => (
+                        {event.performances.slice(0, 3).map((performance) => (
                           <Chip 
-                            key={ea.id}
-                            label={ea.artist.name}
+                            key={performance.id}
+                            label={performance.artist.name}
                             size="small"
                             variant="outlined"
-                            color={ea.confirmed ? "success" : "default"}
+                            color={performance.status === 'CONFIRMED' ? "success" : performance.status === 'PENDING' ? "warning" : "default"}
                           />
                         ))}
-                        {event.eventArtists.length > 3 && (
+                        {event.performances.length > 3 && (
                           <Chip 
-                            label={`+${event.eventArtists.length - 3} more`}
+                            label={`+${event.performances.length - 3} more`}
                             size="small"
                             variant="outlined"
                           />
