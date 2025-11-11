@@ -6,10 +6,10 @@ import { Button, Stack } from "@mui/material";
 export default function ArtistBookingActions({ bookingId }: { bookingId: string }) {
   const [busy, setBusy] = React.useState(false);
 
-  async function update(action: "ACCEPT" | "DECLINE") {
+  async function update(action: "APPROVE" | "DECLINE") {
     setBusy(true);
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/performances/${bookingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
@@ -19,7 +19,7 @@ export default function ArtistBookingActions({ bookingId }: { bookingId: string 
         window.location.reload();
       } else {
         const j = await res.json().catch(() => ({}));
-        alert(j?.message || "Failed to update booking");
+        alert(j?.message || "Failed to update performance");
       }
     } finally {
       setBusy(false);
@@ -31,7 +31,7 @@ export default function ArtistBookingActions({ bookingId }: { bookingId: string 
       <Button
         variant="contained"
         size="small"
-        onClick={() => update("ACCEPT")}
+        onClick={() => update("APPROVE")}
         disabled={busy}
       >
         Accept
