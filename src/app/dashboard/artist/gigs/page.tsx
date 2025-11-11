@@ -151,7 +151,6 @@ export default async function ArtistGigsPage({
           <Box sx={{ minWidth: 200 }}>
             <ArtistEventCreationDialog 
               artistId={user.artist.id} 
-              onEventCreated={() => window.location.reload()} 
             />
           </Box>
         </Box>
