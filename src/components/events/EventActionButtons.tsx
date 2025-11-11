@@ -16,6 +16,7 @@ import {
   TextField,
   MenuItem,
   Chip,
+  Tooltip,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 
@@ -151,14 +152,25 @@ export default function EventActionButtons({ event, canManage }: Props) {
             </Alert>
           )}
           
-          <Button
-            variant="contained"
-            fullWidth
-            disabled={event.status === "CANCELLED" || loading}
-            onClick={() => setEditDialogOpen(true)}
+          <Tooltip
+            title={
+              event.status === "CANCELLED" ? "Cannot edit details of a cancelled event." :
+              event.status === "COMPLETED" ? "Cannot edit details of a completed event." :
+              loading ? "Processing..." : ""
+            }
+            disableHoverListener={!["CANCELLED", "COMPLETED"].includes(event.status) && !loading}
           >
-            Edit Event Details
-          </Button>
+            <span>
+              <Button
+                variant="contained"
+                fullWidth
+                disabled={["CANCELLED", "COMPLETED"].includes(event.status) || loading}
+                onClick={() => setEditDialogOpen(true)}
+              >
+                Edit Event Details
+              </Button>
+            </span>
+          </Tooltip>
           
           {event.status !== "CANCELLED" && (
             <Button

@@ -180,6 +180,7 @@ export default async function EventDetailsPage({
                   performances={event.performances}
                   canManage={canManage}
                   currentUserId={user.id}
+                  eventStatus={event.status}
                 />
               </CardContent>
             </Card>

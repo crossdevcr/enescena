@@ -15,6 +15,7 @@ import {
   Typography,
   Autocomplete,
   Alert,
+  Tooltip,
 } from "@mui/material";
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
@@ -39,15 +40,36 @@ interface Props {
   performances: Performance[];
   canManage: boolean;
   currentUserId: string;
+  eventStatus: string;
 }
 
 export default function EventPerformanceManagement({ 
   eventId, 
   performances, 
   canManage, 
-  currentUserId 
+  currentUserId,
+  eventStatus
 }: Props) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Determine if new invitations can be sent based on event status
+  // Allow invitations for most statuses except when event is cancelled, completed, or awaiting venue approval
+  const canSendInvitations = canManage && !['CANCELLED', 'COMPLETED', 'PENDING_VENUE_APPROVAL'].includes(eventStatus);
+
+  // Helper function to get invitation disabled message
+  const getInvitationDisabledMessage = (): string => {
+    switch (eventStatus) {
+      case 'CANCELLED':
+        return 'Cannot invite artists because this event has been cancelled.';
+      case 'COMPLETED':
+        return 'Cannot invite artists because this event has been completed.';
+      case 'PENDING_VENUE_APPROVAL':
+        return 'Cannot invite artists while this event is awaiting venue approval.';
+      default:
+        return `Cannot invite artists while event status is ${eventStatus.toLowerCase()}.`;
+    }
+  };
+
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -224,16 +246,24 @@ export default function EventPerformanceManagement({
         </Typography>
         
         {canManage && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              resetForm();
-              setAddDialogOpen(true);
-            }}
+          <Tooltip 
+            title={!canSendInvitations ? getInvitationDisabledMessage() : ''}
+            disableHoverListener={canSendInvitations}
           >
-            Invite Artist
-          </Button>
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                disabled={!canSendInvitations}
+                onClick={() => {
+                  resetForm();
+                  setAddDialogOpen(true);
+                }}
+              >
+                Invite Artist
+              </Button>
+            </span>
+          </Tooltip>
         )}
       </Box>
 
@@ -380,7 +410,11 @@ export default function EventPerformanceManagement({
           <Button onClick={() => setAddDialogOpen(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmitAdd} variant="contained" disabled={loading}>
+          <Button 
+            onClick={handleSubmitAdd} 
+            variant="contained" 
+            disabled={loading || !canSendInvitations}
+          >
             {loading ? "Sending Invitation..." : "Send Invitation"}
           </Button>
         </DialogActions>
