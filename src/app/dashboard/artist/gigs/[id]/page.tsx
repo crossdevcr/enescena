@@ -16,7 +16,7 @@ function formatCR(d: Date) {
 }
 function statusChip(s: string) {
   const map: Record<string, "default"|"warning"|"success"|"error"|"info"> = {
-    PENDING:"warning", ACCEPTED:"success", DECLINED:"error", CANCELLED:"default", COMPLETED:"info",
+    PENDING:"warning", CONFIRMED:"success", DECLINED:"error", CANCELLED:"default", COMPLETED:"info",
   };
   return <Chip label={s} color={map[s] ?? "default"} size="small" />;
 }
@@ -26,15 +26,15 @@ export default async function ArtistGigDetails({ params }: { params: { id: strin
   if (!me) redirect("/api/auth/login");
   if (me.role !== "ARTIST" || !me.artist) redirect("/dashboard");
 
-  const booking = await prisma.booking.findFirst({
+  const performance = await prisma.performance.findFirst({
     where: { id: params.id, artistId: me.artist.id },
     select: {
-      id:true, status:true, eventDate:true, hours:true, note:true, createdAt:true, updatedAt:true,
-      venue:  { select: { name:true } },
+      id:true, status:true, hours:true, notes:true, proposedFee:true, agreedFee:true, createdAt:true, updatedAt:true,
+      event: { select: { eventDate:true, title:true, venue: { select: { name:true } } } },
       artist: { select: { name:true, slug:true } },
     },
   });
-  if (!booking) redirect("/dashboard/artist/gigs");
+  if (!performance) redirect("/dashboard/artist/gigs");
 
   return (
     <Box sx={{ 
@@ -45,33 +45,48 @@ export default async function ArtistGigDetails({ params }: { params: { id: strin
       <Container sx={{ py: 6 }}>
       <Stack spacing={2}>
         <Button component={Link} href="/dashboard/artist/gigs" size="small">← Back to requests</Button>
-        <Typography variant="h5" fontWeight={700}>Booking Details</Typography>
+        <Typography variant="h5" fontWeight={700}>Performance Details</Typography>
         <Box sx={{ display:"grid", gridTemplateColumns:{ xs:"1fr", sm:"1fr 1fr"}, gap:2 }}>
           <Box>
             <Typography variant="body2" color="text.secondary">Venue</Typography>
-            <Typography variant="body1">{booking.venue?.name ?? "—"}</Typography>
+            <Typography variant="body1">{performance.event?.venue?.name ?? "—"}</Typography>
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">Status</Typography>
-            {statusChip(booking.status)}
+            {statusChip(performance.status)}
+          </Box>
+          <Box>
+            <Typography variant="body2" color="text.secondary">Event</Typography>
+            <Typography variant="body1">{performance.event?.title ?? "—"}</Typography>
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">Event date</Typography>
-            <Typography variant="body1">{formatCR(booking.eventDate)}</Typography>
+            <Typography variant="body1">{formatCR(performance.event?.eventDate!)}</Typography>
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">Hours</Typography>
-            <Typography variant="body1">{booking.hours ?? "—"}</Typography>
+            <Typography variant="body1">{performance.hours ?? "—"}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="body2" color="text.secondary">Fee</Typography>
+            <Typography variant="body1">
+              {performance.agreedFee 
+                ? `₡${performance.agreedFee.toLocaleString()} (agreed)` 
+                : performance.proposedFee 
+                  ? `₡${performance.proposedFee.toLocaleString()} (proposed)`
+                  : "—"
+              }
+            </Typography>
           </Box>
           <Box sx={{ gridColumn: "1 / -1" }}>
             <Typography variant="body2" color="text.secondary">Note</Typography>
-            <Typography variant="body1" sx={{ whiteSpace:"pre-wrap" }}>{booking.note ?? "—"}</Typography>
+            <Typography variant="body1" sx={{ whiteSpace:"pre-wrap" }}>{performance.notes ?? "—"}</Typography>
           </Box>
         </Box>
 
         <Divider />
         <Box>
-          <Button component={Link} href={`/artists/${booking.artist?.slug}`} variant="outlined" size="small">
+          <Button component={Link} href={`/artists/${performance.artist?.slug}`} variant="outlined" size="small">
             View my public page
           </Button>
         </Box>
