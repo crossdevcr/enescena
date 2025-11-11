@@ -169,7 +169,7 @@ export async function POST(req: Request) {
   }
 
   // Generate unique slug
-  let slug = body.title
+  const slug = body.title
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9\s-]/g, "")

@@ -13,7 +13,6 @@ import {
   Stack,
   TextField,
   Typography,
-  Autocomplete,
   Alert,
 } from "@mui/material";
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
@@ -52,7 +51,6 @@ export default function EventArtistManagement({
   const [selectedEventArtist, setSelectedEventArtist] = useState<EventArtist | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [availableArtists, setAvailableArtists] = useState<Artist[]>([]);
   
   // Form state for adding/editing artists
   const [formData, setFormData] = useState({

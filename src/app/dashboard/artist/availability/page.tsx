@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
-  Alert, Box, Button, Container, Stack, Table, TableBody, TableCell,
+  Alert, Box, Container, Stack, Table, TableBody, TableCell,
   TableHead, TableRow, Typography
 } from "@mui/material";
 import AddBlackoutForm from "@/components/availability/AddBlackoutForm";
