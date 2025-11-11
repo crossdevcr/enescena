@@ -141,12 +141,18 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   
+  // For venue users, automatically set their venue as the event venue
+  let venueId = body.venueId;
+  if (user.role === "VENUE" && user.venue && !venueId) {
+    venueId = user.venue.id;
+  }
+  
   // Use our validation utility
   const validation = validateEventCreation({
     createdBy: user.id,
     title: body.title,
     eventDate: new Date(body.eventDate),
-    venueId: body.venueId,
+    venueId: venueId,
     externalVenueName: body.externalVenueName,
     externalVenueAddress: body.externalVenueAddress,
     description: body.description,
@@ -182,7 +188,7 @@ export async function POST(req: Request) {
     let needsVenueApproval = false
     
     // If artist creates event at an internal venue, it needs venue approval
-    if (user.role === "ARTIST" && body.venueId) {
+    if (user.role === "ARTIST" && venueId) {
       needsVenueApproval = true
     }
     
@@ -194,7 +200,7 @@ export async function POST(req: Request) {
         description: body.description || null,
         eventDate: new Date(body.eventDate),
         endDate: body.endDate ? new Date(body.endDate) : null,
-        venueId: body.venueId || null,
+        venueId: venueId || null,
         externalVenueName: body.externalVenueName || null,
         externalVenueAddress: body.externalVenueAddress || null,
         externalVenueCity: body.externalVenueCity || null,
