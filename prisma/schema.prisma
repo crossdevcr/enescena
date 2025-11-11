@@ -22,12 +22,13 @@ enum PerformanceStatus {
 }
 
 enum EventStatus {
-  DRAFT          // Being created
-  SEEKING_VENUE  // Artist looking for venue
-  SEEKING_ARTISTS // Venue looking for more artists
-  PENDING        // Waiting for confirmations
-  CONFIRMED      // All parties agreed
-  PUBLISHED      // Public and promoted
+  DRAFT                 // Being created by venue or artist
+  PENDING_VENUE_APPROVAL // Artist created event, waiting for venue approval
+  SEEKING_VENUE         // Artist looking for venue
+  SEEKING_ARTISTS       // Venue looking for more artists
+  PENDING              // Waiting for performance confirmations
+  CONFIRMED            // All parties agreed
+  PUBLISHED            // Public and promoted
   CANCELLED      
   COMPLETED
 }
@@ -40,9 +41,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  artist       Artist?
-  venue        Venue?
+  artist        Artist?
+  venue         Venue?
   createdEvents Event[] @relation("EventCreator")
+  notifications Notification[]
 }
 
 model Artist {
@@ -133,6 +135,7 @@ model Event {
   updatedAt DateTime @updatedAt
 
   performances Performance[]
+  notifications Notification[]
 
   @@index([createdBy, eventDate])
   @@index([venueId, eventDate])
@@ -171,9 +174,52 @@ model Performance {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  notifications Notification[]
+
   @@unique([eventId, artistId]) // Prevent duplicate artist assignments
   @@index([eventId])
   @@index([artistId])
   @@index([status, createdAt])
   @@index([artistId, status])
+}
+
+enum NotificationType {
+  EVENT_VENUE_APPROVAL_REQUEST    // Artist requests venue approval for event
+  EVENT_VENUE_APPROVED           // Venue approved artist's event
+  EVENT_VENUE_DECLINED           // Venue declined artist's event
+  PERFORMANCE_APPLICATION        // Artist applied to perform at event
+  PERFORMANCE_ACCEPTED          // Venue accepted artist's performance
+  PERFORMANCE_DECLINED          // Venue declined artist's performance
+  PERFORMANCE_CANCELLED         // Performance was cancelled
+  EVENT_STATUS_CHANGE           // Event status changed
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  
+  // Recipients
+  userId    String           // Who receives this notification
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Related entities
+  eventId       String?
+  event         Event?        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  performanceId String?
+  performance   Performance?  @relation(fields: [performanceId], references: [id], onDelete: Cascade)
+  
+  // Notification content
+  title     String
+  message   String
+  actionUrl String?          // URL to take action (approve/decline)
+  
+  // Status
+  isRead    Boolean @default(false)
+  readAt    DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isRead])
+  @@index([type, createdAt])
 }

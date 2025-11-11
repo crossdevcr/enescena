@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { validateEventCreation } from "@/lib/events/eventUtils";
+import { ApprovalWorkflows } from "@/lib/events/approvalWorkflows";
 
 /**
  * GET /api/events
@@ -14,23 +16,32 @@ export async function GET(req: Request) {
 
   // For public events, no authentication required
   if (publicOnly) {
-    const events = await prisma.event.findMany({
-      where: { 
-        status: 'PUBLISHED'
-      },
-      include: {
-        venue: { select: { id: true, name: true, slug: true, city: true } },
-        performances: {
-          include: {
-            artist: { select: { id: true, name: true, slug: true } }
-          },
-          orderBy: { createdAt: "asc" }
+    try {
+      const events = await prisma.event.findMany({
+        where: { 
+          isPublic: true,
         },
-      },
-      orderBy: { eventDate: "desc" },
-    });
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          eventDate: true,
+          endDate: true,
+          status: true,
+          venue: { select: { id: true, name: true, slug: true, city: true } },
+          externalVenueName: true,
+          externalVenueAddress: true,
+          externalVenueCity: true,
+        },
+        orderBy: { eventDate: "desc" },
+      });
 
-    return NextResponse.json({ events });
+      return NextResponse.json({ events });
+    } catch (error) {
+      console.error('Public events query error:', error);
+      return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
+    }
   }
 
   // For user-specific events, require authentication
@@ -65,11 +76,12 @@ export async function GET(req: Request) {
         ]
       };
     } else if (user.role === "ARTIST" && user.artist) {
+      // For now, simplify to just events they created and public seeking artists events
+      // We'll add performance relationship queries once Prisma types are resolved
       whereClause = {
         OR: [
           { createdBy: user.id },     // Events they created
-          { performances: { some: { artistId: user.artist.id } } }, // Events they're performing in
-          { status: "SEEKING_ARTISTS" }, // Events seeking artists
+          { AND: [{ status: "SEEKING_ARTISTS" }, { isPublic: true }] }, // Public events seeking artists
         ]
       };
     } else {
@@ -78,28 +90,37 @@ export async function GET(req: Request) {
     }
   }
 
-  const events = await prisma.event.findMany({
-    where: whereClause,
-    include: {
-      venue: { select: { id: true, name: true, slug: true, city: true } },
-      creator: { select: { id: true, name: true, role: true } },
-      performances: {
-        include: {
-          artist: { select: { id: true, name: true, slug: true } }
-        },
-        orderBy: { createdAt: "asc" }
+  try {
+    const events = await prisma.event.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        eventDate: true,
+        endDate: true,
+        status: true,
+        isPublic: true,
+        createdBy: true,
+        venue: { select: { id: true, name: true, slug: true, city: true } },
+        externalVenueName: true,
+        externalVenueAddress: true,
+        externalVenueCity: true,
       },
-      
-    },
-    orderBy: { eventDate: "desc" },
-  });
+      orderBy: { eventDate: "desc" },
+    });
 
-  return NextResponse.json({ events });
+    return NextResponse.json({ events });
+  } catch (error) {
+    console.error('Events query error:', error);
+    return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
+  }
 }
 
 /**
  * POST /api/events
- * Create a new event for the authenticated venue
+ * Create a new event (supports venues and artists)
  */
 export async function POST(req: Request) {
   const jar = await cookies();
@@ -112,55 +133,37 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { email },
-    include: { venue: true },
+    include: { venue: true, artist: true },
   });
-  if (!user || user.role !== "VENUE" || !user.venue) {
+  if (!user) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   const body = await req.json().catch(() => ({}));
-  const {
-    title,
-    description,
-    eventDate,
-    endDate,
-    hours,
-    budget,
-    status = "DRAFT"
-  } = body;
+  
+  // Use our validation utility
+  const validation = validateEventCreation({
+    createdBy: user.id,
+    title: body.title,
+    eventDate: new Date(body.eventDate),
+    venueId: body.venueId,
+    externalVenueName: body.externalVenueName,
+    externalVenueAddress: body.externalVenueAddress,
+    description: body.description,
+    totalHours: body.totalHours,
+    totalBudget: body.totalBudget,
+    isPublic: body.isPublic,
+  });
 
-  if (!title || !eventDate) {
+  if (!validation.valid) {
     return NextResponse.json({ 
       error: "validation_error",
-      message: "Title and event date are required" 
-    }, { status: 400 });
-  }
-
-  // Parse dates
-  let parsedEventDate: Date;
-  let parsedEndDate: Date | null = null;
-
-  try {
-    parsedEventDate = new Date(eventDate);
-    if (Number.isNaN(parsedEventDate.getTime())) {
-      throw new Error("Invalid event date");
-    }
-
-    if (endDate) {
-      parsedEndDate = new Date(endDate);
-      if (Number.isNaN(parsedEndDate.getTime())) {
-        throw new Error("Invalid end date");
-      }
-    }
-  } catch (e) {
-    return NextResponse.json({ 
-      error: "validation_error",
-      message: "Invalid date format" 
+      message: validation.errors.join(", ")
     }, { status: 400 });
   }
 
   // Generate unique slug
-  let slug = title
+  let slug = body.title
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9\s-]/g, "")
@@ -174,26 +177,64 @@ export async function POST(req: Request) {
     slugCounter++;
   }
 
-  const event = await prisma.event.create({
-    data: {
-      venueId: user.venue.id,
-      title: String(title),
-      slug: finalSlug,
-      description: description ? String(description) : null,
-      eventDate: parsedEventDate,
-      endDate: parsedEndDate,
-      hours: hours && !isNaN(Number(hours)) ? Number(hours) : null,
-      budget: budget && !isNaN(Number(budget)) ? Number(budget) : null,
-      status: ["DRAFT", "PUBLISHED", "CANCELLED", "COMPLETED"].includes(status) ? status : "DRAFT",
-    },
-    include: {
-      eventArtists: {
-        include: {
-          artist: { select: { id: true, name: true, slug: true } }
-        }
-      }
+  try {
+    // Determine initial status based on user type and venue
+    let needsVenueApproval = false
+    
+    // If artist creates event at an internal venue, it needs venue approval
+    if (user.role === "ARTIST" && body.venueId) {
+      needsVenueApproval = true
     }
-  });
+    
+    const event = await prisma.event.create({
+      data: {
+        createdBy: user.id,
+        title: body.title,
+        slug: finalSlug,
+        description: body.description || null,
+        eventDate: new Date(body.eventDate),
+        endDate: body.endDate ? new Date(body.endDate) : null,
+        venueId: body.venueId || null,
+        externalVenueName: body.externalVenueName || null,
+        externalVenueAddress: body.externalVenueAddress || null,
+        externalVenueCity: body.externalVenueCity || null,
+        totalHours: body.totalHours || null,
+        totalBudget: body.totalBudget || null,
+        isPublic: body.isPublic ?? true,
+        status: "DRAFT",
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        eventDate: true,
+        endDate: true,
+        status: true,
+        isPublic: true,
+        venue: { select: { id: true, name: true, slug: true } },
+        externalVenueName: true,
+        externalVenueAddress: true,
+        externalVenueCity: true,
+      }
+    });
 
-  return NextResponse.json({ event });
+    // If artist creating event at internal venue, request venue approval
+    if (needsVenueApproval && body.venueId) {
+      const approvals = new ApprovalWorkflows(prisma)
+      await approvals.requestVenueApproval(event.id, body.venueId)
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      event,
+      message: needsVenueApproval ? "Event created and venue approval requested" : "Event created successfully"
+    });
+  } catch (error) {
+    console.error('Event creation error:', error);
+    return NextResponse.json(
+      { error: "creation_failed", message: "Failed to create event" },
+      { status: 500 }
+    );
+  }
 }
