@@ -254,7 +254,7 @@ export default function SignUpPage() {
                           <Box>
                             <Typography variant="h6">Artist</Typography>
                             <Typography variant="body2" color="text.secondary">
-                              I'm a musician looking for venues and gigs
+                              I&apos;m a musician looking for venues and gigs
                             </Typography>
                           </Box>
                         </Box>
@@ -443,7 +443,7 @@ export default function SignUpPage() {
               Verify Your Email
             </Typography>
             <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mb: 3 }}>
-              We've sent a confirmation code to <strong>{registrationEmail}</strong>. 
+              We&apos;ve sent a confirmation code to <strong>{registrationEmail}</strong>. 
               Please enter it below to complete your registration.
             </Typography>
 
@@ -491,7 +491,7 @@ export default function SignUpPage() {
 
             <Box sx={{ textAlign: "center", mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Didn't receive the code?{" "}
+                Didn&apos;t receive the code?{" "}
                 <Link href="#" underline="hover" onClick={(e) => {
                   e.preventDefault();
                   // TODO: Implement resend functionality

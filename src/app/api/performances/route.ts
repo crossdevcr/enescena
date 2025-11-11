@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyIdToken } from '@/lib/auth/cognito'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
-import { validatePerformance } from '@/lib/events/eventUtils'
 import { ApprovalWorkflows } from '@/lib/events/approvalWorkflows'
 
 /**
@@ -14,7 +13,7 @@ export async function GET(request: NextRequest) {
   const eventId = searchParams.get('eventId')
   
   try {
-    let whereClause: any = {}
+    const whereClause: Record<string, unknown> = {}
     
     if (eventId) {
       whereClause.eventId = eventId

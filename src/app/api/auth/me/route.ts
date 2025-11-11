@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/auth/cookies";
 import { getUserFromToken } from "@/lib/auth/cognitoSdk";
 import { prisma } from "@/lib/prisma";

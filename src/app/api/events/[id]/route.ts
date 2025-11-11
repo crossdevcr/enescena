@@ -120,7 +120,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         throw new Error("Invalid event date");
       }
       updateData.eventDate = parsedEventDate;
-    } catch (e) {
+    } catch {
       return NextResponse.json({ 
         error: "validation_error",
         message: "Invalid event date format" 
@@ -136,7 +136,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           throw new Error("Invalid end date");
         }
         updateData.endDate = parsedEndDate;
-      } catch (e) {
+      } catch {
         return NextResponse.json({ 
           error: "validation_error",
           message: "Invalid end date format" 

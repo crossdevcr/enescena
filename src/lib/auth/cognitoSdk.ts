@@ -73,7 +73,7 @@ export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
       ...(secretHash && { SecretHash: secretHash }),
     });
 
-    const response = await cognitoClient.send(command);
+    await cognitoClient.send(command);
 
     return {
       success: true,

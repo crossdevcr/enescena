@@ -3,7 +3,6 @@ import { verifyIdToken } from "@/lib/auth/cognito";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { validateEventCreation } from "@/lib/events/eventUtils";
-import { ApprovalWorkflows } from "@/lib/events/approvalWorkflows";
 
 /**
  * GET /api/events

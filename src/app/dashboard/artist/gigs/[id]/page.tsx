@@ -61,7 +61,7 @@ export default async function ArtistGigDetails({ params }: { params: { id: strin
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">Event date</Typography>
-            <Typography variant="body1">{formatCR(performance.event?.eventDate!)}</Typography>
+            <Typography variant="body1">{performance.event?.eventDate ? formatCR(performance.event.eventDate) : "—"}</Typography>
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">Hours</Typography>
