@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, NotificationType } from "@prisma/client";
 import { sendEmail } from "@/lib/email/mailer";
 import {
   performanceInvitationForArtist,
@@ -12,12 +12,12 @@ import {
 
 export interface ApprovalWorkflowService {
   // Event request workflows (Artist requests event at venue)
-  requestEventAtVenue(venueId: string, artistUserId: string, eventData: any): Promise<{ success: boolean; eventId?: string; message: string }>;
+  requestEventAtVenue(venueId: string, artistUserId: string, eventData: Record<string, unknown>): Promise<{ success: boolean; eventId?: string; message: string }>;
   approveEventRequest(eventId: string, venueUserId: string): Promise<{ success: boolean; message: string }>;
   declineEventRequest(eventId: string, venueUserId: string, reason?: string): Promise<{ success: boolean; message: string }>;
   
   // Performance invitation workflows (Venue invites artist to perform)
-  inviteArtistToPerform(eventId: string, artistId: string, venueUserId: string, performanceData: any): Promise<{ success: boolean; performanceId?: string; message: string }>;
+  inviteArtistToPerform(eventId: string, artistId: string, venueUserId: string, performanceData: Record<string, unknown>): Promise<{ success: boolean; performanceId?: string; message: string }>;
   acceptPerformanceInvitation(performanceId: string, artistUserId: string): Promise<{ success: boolean; message: string }>;
   declinePerformanceInvitation(performanceId: string, artistUserId: string, reason?: string): Promise<{ success: boolean; message: string }>;
   
@@ -25,8 +25,8 @@ export interface ApprovalWorkflowService {
   cancelAllPerformancesForEvent(eventId: string, cancellationReason?: string): Promise<{ success: boolean; cancelledCount: number; message: string }>;
   
   // Notification helpers
-  createNotification(type: string, userId: string, data: any): Promise<void>;
-  getUnreadNotifications(userId: string): Promise<any[]>;
+  createNotification(type: NotificationType, userId: string, data: Record<string, unknown>): Promise<void>;
+  getUnreadNotifications(userId: string): Promise<Record<string, unknown>[]>;
   markNotificationAsRead(notificationId: string, userId: string): Promise<void>;
 }
 
@@ -45,7 +45,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
    * Artist requests to create event at venue
    * Creates event in PENDING_VENUE_APPROVAL status
    */
-  async requestEventAtVenue(venueId: string, artistUserId: string, eventData: any): Promise<{ success: boolean; eventId?: string; message: string }> {
+  async requestEventAtVenue(venueId: string, artistUserId: string, eventData: Record<string, unknown>): Promise<{ success: boolean; eventId?: string; message: string }> {
     try {
       const venue = await this.prisma.venue.findUnique({
         where: { id: venueId },
@@ -68,23 +68,23 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
       // Create event with PENDING_VENUE_APPROVAL status
       const event = await this.prisma.event.create({
         data: {
-          title: eventData.title,
-          description: eventData.description,
-          eventDate: new Date(eventData.eventDate),
-          endDate: eventData.endDate ? new Date(eventData.endDate) : null,
-          totalHours: eventData.totalHours,
-          totalBudget: eventData.totalBudget,
+          title: eventData.title as string,
+          description: eventData.description as string,
+          eventDate: new Date(eventData.eventDate as string | number),
+          endDate: eventData.endDate ? new Date(eventData.endDate as string | number) : null,
+          totalHours: eventData.totalHours as number,
+          totalBudget: eventData.totalBudget as number,
           status: "PENDING_VENUE_APPROVAL",
           createdBy: artistUserId,
           venueId: venueId,
-          slug: `${eventData.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
+          slug: `${(eventData.title as string).toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
         }
       });
 
       // Create notification for venue
-      await this.createNotification("EVENT_REQUEST", venue.userId, {
+      await this.createNotification("EVENT_REQUEST" as NotificationType, venue.userId, {
         title: "New Event Request",
-        message: `${artist.name} wants to host "${eventData.title}" at your venue on ${new Date(eventData.eventDate).toLocaleDateString()}`,
+        message: `${artist.name} wants to host "${eventData.title as string}" at your venue on ${new Date(eventData.eventDate as string | number).toLocaleDateString()}`,
         eventId: event.id,
         actionUrl: `/dashboard/events/${event.id}/approve`
       });
@@ -95,9 +95,9 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
           const emailTemplate = eventRequestForVenue({
             venueName: venue.user.name || venue.name,
             artistName: artist.name || "An artist",
-            eventTitle: eventData.title,
+            eventTitle: eventData.title as string,
             eventISO: event.eventDate.toISOString(),
-            budget: eventData.totalBudget,
+            budget: eventData.totalBudget as number,
             eventId: event.id
           });
           
@@ -146,7 +146,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
       });
 
       // Notify event creator (artist)
-      await this.createNotification("EVENT_REQUEST_APPROVED", event.createdBy, {
+      await this.createNotification("EVENT_REQUEST_APPROVED" as NotificationType, event.createdBy, {
         title: "Event Request Approved!",
         message: `${event.venue.name} approved your event request for "${event.title}"`,
         eventId: eventId,
@@ -209,7 +209,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
       });
 
       // Notify event creator (artist)
-      await this.createNotification("EVENT_REQUEST_DECLINED", event.createdBy, {
+      await this.createNotification("EVENT_REQUEST_DECLINED" as NotificationType, event.createdBy, {
         title: "Event Request Declined",
         message: `${event.venue.name} declined your event request for "${event.title}"${reason ? `: ${reason}` : ''}`,
         eventId: eventId,
@@ -254,7 +254,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
    * Venue invites artist to perform at an event
    * Creates Performance in PENDING status (invitation)
    */
-  async inviteArtistToPerform(eventId: string, artistId: string, venueUserId: string, performanceData: any): Promise<{ success: boolean; performanceId?: string; message: string }> {
+  async inviteArtistToPerform(eventId: string, artistId: string, venueUserId: string, performanceData: Record<string, unknown>): Promise<{ success: boolean; performanceId?: string; message: string }> {
     try {
       const event = await this.prisma.event.findUnique({
         where: { id: eventId },
@@ -306,16 +306,16 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
           eventId: eventId,
           artistId: artistId,
           status: "PENDING",
-          proposedFee: performanceData.proposedFee,
-          hours: performanceData.hours,
-          venueNotes: performanceData.venueNotes,
-          startTime: performanceData.startTime ? new Date(performanceData.startTime) : null,
-          endTime: performanceData.endTime ? new Date(performanceData.endTime) : null
+          proposedFee: performanceData.proposedFee as number || null,
+          hours: performanceData.hours as number || null,
+          venueNotes: performanceData.venueNotes as string || null,
+          startTime: performanceData.startTime ? new Date(performanceData.startTime as string | number) : null,
+          endTime: performanceData.endTime ? new Date(performanceData.endTime as string | number) : null
         }
       });
 
       // Notify artist
-      await this.createNotification("PERFORMANCE_INVITATION", artist.userId, {
+      await this.createNotification("PERFORMANCE_INVITATION" as NotificationType, artist.userId, {
         title: "Performance Invitation",
         message: `You've been invited to perform at "${event.title}"`,
         eventId: eventId,
@@ -331,7 +331,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
             venueName: event.venue?.name || "the venue",
             eventTitle: event.title,
             eventISO: event.eventDate.toISOString(),
-            hours: performanceData.hours,
+            hours: performanceData.hours as number,
             performanceId: performance.id
           });
           
@@ -389,7 +389,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
 
       // Notify venue/event creator
       const notifyUserId = performance.event.venue?.userId || performance.event.createdBy;
-      await this.createNotification("PERFORMANCE_INVITATION_ACCEPTED", notifyUserId, {
+      await this.createNotification("PERFORMANCE_INVITATION_ACCEPTED" as NotificationType, notifyUserId, {
         title: "Performance Invitation Accepted",
         message: `${performance.artist.name} accepted your invitation to perform at "${performance.event.title}"`,
         eventId: performance.event.id,
@@ -468,7 +468,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
 
       // Notify venue/event creator
       const notifyUserId = performance.event.venue?.userId || performance.event.createdBy;
-      await this.createNotification("PERFORMANCE_INVITATION_DECLINED", notifyUserId, {
+      await this.createNotification("PERFORMANCE_INVITATION_DECLINED" as NotificationType, notifyUserId, {
         title: "Performance Invitation Declined",
         message: `${performance.artist.name} declined your invitation to perform at "${performance.event.title}"${reason ? `: ${reason}` : ''}`,
         eventId: performance.event.id,
@@ -607,17 +607,17 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
   /**
    * Create a notification for a user
    */
-  async createNotification(type: string, userId: string, data: any): Promise<void> {
+  async createNotification(type: NotificationType, userId: string, data: Record<string, unknown>): Promise<void> {
     try {
       await this.prisma.notification.create({
         data: {
-          type: type as any,
+          type: type,
           userId,
-          eventId: data.eventId || null,
-          performanceId: data.performanceId || null,
-          title: data.title,
-          message: data.message,
-          actionUrl: data.actionUrl || null,
+          eventId: (data.eventId as string) || null,
+          performanceId: (data.performanceId as string) || null,
+          title: data.title as string,
+          message: data.message as string,
+          actionUrl: (data.actionUrl as string) || null,
         }
       });
     } catch (error) {
@@ -628,7 +628,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
   /**
    * Get unread notifications for a user
    */
-  async getUnreadNotifications(userId: string): Promise<any[]> {
+  async getUnreadNotifications(userId: string): Promise<Record<string, unknown>[]> {
     return this.prisma.notification.findMany({
       where: {
         userId,

@@ -17,6 +17,18 @@ import { unstable_noStore as noStore } from "next/cache";
 import EventActionButtons from "@/components/events/EventActionButtons";
 import EventPerformanceManagement from "@/components/events/EventPerformanceManagement";
 
+interface PerformanceData {
+  artistId?: string;
+  status: string;
+  artist: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+}
+
+
+
 function statusChip(status: string) {
   const map: Record<string, "default" | "warning" | "success" | "error" | "info"> = {
     DRAFT: "default",
@@ -72,7 +84,7 @@ export default async function EventDetailsPage({
 
   // Access control: venue owner or admin can manage, artists can view if part of event
   const isVenueOwner = user.venue && event.venue?.userId === user.id;
-  const isPerformingArtist = user.artist && event.performances.some((p: { artistId?: string }) => p.artistId === user.artist?.id);
+  const isPerformingArtist = user.artist && event.performances.some((p: PerformanceData) => p.artistId === user.artist?.id);
   const isAdmin = user.role === "ADMIN";
 
   if (!isVenueOwner && !isPerformingArtist && !isAdmin) {
@@ -205,14 +217,14 @@ export default async function EventDetailsPage({
                   <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                     <Typography color="text.secondary">Accepted:</Typography>
                     <Typography fontWeight={600}>
-                      {event.performances.filter((p: any) => p.status === 'ACCEPTED').length}
+                      {event.performances.filter((p: PerformanceData) => p.status === 'ACCEPTED').length}
                     </Typography>
                   </Box>
                   
                   <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                     <Typography color="text.secondary">Pending:</Typography>
                     <Typography fontWeight={600}>
-                      {event.performances.filter((p: any) => p.status === 'PENDING').length}
+                      {event.performances.filter((p: PerformanceData) => p.status === 'PENDING').length}
                     </Typography>
                   </Box>
                   

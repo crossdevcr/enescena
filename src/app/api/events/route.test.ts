@@ -75,7 +75,7 @@ describe("Events API", () => {
     // Mock cookies
     vi.mocked(cookies).mockResolvedValue({
       get: vi.fn().mockReturnValue({ value: "fake-token" }),
-    } as any);
+    } as never);
 
     // Mock token verification
     vi.mocked(verifyIdToken).mockResolvedValue({
@@ -88,7 +88,7 @@ describe("Events API", () => {
 
   describe("GET /api/events", () => {
     it("should return public events without authentication", async () => {
-      vi.mocked(prisma.event.findMany).mockResolvedValue([mockEvent] as any);
+      vi.mocked(prisma.event.findMany).mockResolvedValue([mockEvent] as never[]);
 
       const request = new Request("http://localhost:3000/api/events?public=true");
       const response = await GET(request);
@@ -114,7 +114,7 @@ describe("Events API", () => {
     });
 
     it("should return venue events for authenticated venue user", async () => {
-      vi.mocked(prisma.event.findMany).mockResolvedValue([mockEvent] as any);
+      vi.mocked(prisma.event.findMany).mockResolvedValue([mockEvent] as never[]);
 
       const request = new Request("http://localhost:3000/api/events");
       const response = await GET(request);
@@ -126,11 +126,11 @@ describe("Events API", () => {
 
     it("should return artist-relevant events for authenticated artist", async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue(mockArtistUser as any);
-      vi.mocked(prisma.event.findMany).mockResolvedValue([mockEvent] as any);
+      vi.mocked(prisma.event.findMany).mockResolvedValue([mockEvent] as never[]);
 
       const request = new Request("http://localhost:3000/api/events");
       const response = await GET(request);
-      const data = await response.json();
+      await response.json();
 
       expect(response.status).toBe(200);
     });
@@ -138,7 +138,7 @@ describe("Events API", () => {
     it("should return 401 for unauthenticated users", async () => {
       vi.mocked(cookies).mockResolvedValue({
         get: vi.fn().mockReturnValue(undefined),
-      } as any);
+      } as never);
 
       const request = new Request("http://localhost:3000/api/events");
       const response = await GET(request);
@@ -257,7 +257,7 @@ describe("Events API", () => {
         ...mockEvent,
         id: "event3",
         slug: "test-event-1",
-      } as any);
+      } as never);
 
       const request = new Request("http://localhost:3000/api/events", {
         method: "POST",
@@ -276,7 +276,7 @@ describe("Events API", () => {
     it("should return 401 for unauthenticated users", async () => {
       vi.mocked(cookies).mockResolvedValue({
         get: vi.fn().mockReturnValue(undefined),
-      } as any);
+      } as never);
 
       const request = new Request("http://localhost:3000/api/events", {
         method: "POST",

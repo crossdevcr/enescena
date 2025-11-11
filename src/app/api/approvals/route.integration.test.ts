@@ -113,7 +113,7 @@ describe("Approval Workflow Integration Tests", () => {
     // Mock cookies
     vi.mocked(cookies).mockResolvedValue({
       get: vi.fn().mockReturnValue({ value: "fake-token" }),
-    } as any);
+    } as unknown as ReturnType<typeof cookies>);
 
     // Mock token verification
     vi.mocked(verifyIdToken).mockResolvedValue({
@@ -128,13 +128,12 @@ describe("Approval Workflow Integration Tests", () => {
     it("should list pending event approvals for venue", async () => {
       // First call for event approvals
       vi.mocked(prisma.event.findMany)
-        .mockResolvedValueOnce([mockPendingEvent] as any)
+        .mockResolvedValueOnce([mockPendingEvent] as never[])
         .mockResolvedValueOnce([]); // Second call for created events (empty)
       vi.mocked(prisma.performance.findMany).mockResolvedValue([]);
       vi.mocked(prisma.notification.findMany).mockResolvedValue([]);
 
-      const request = new NextRequest("http://localhost:3000/api/approvals");
-      const response = await GET(request);
+      const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -152,8 +151,8 @@ describe("Approval Workflow Integration Tests", () => {
       vi.mocked(prisma.event.update).mockResolvedValue({
         ...mockPendingEvent,
         status: "SEEKING_ARTISTS",
-      } as any);
-      vi.mocked(prisma.notification.create).mockResolvedValue({} as any);
+      } as never);
+      vi.mocked(prisma.notification.create).mockResolvedValue({} as never);
 
       const request = new NextRequest("http://localhost:3000/api/approvals", {
         method: "POST",
@@ -193,8 +192,8 @@ describe("Approval Workflow Integration Tests", () => {
       vi.mocked(prisma.event.update).mockResolvedValue({
         ...mockPendingEvent,
         status: "CANCELLED",
-      } as any);
-      vi.mocked(prisma.notification.create).mockResolvedValue({} as any);
+      } as never);
+      vi.mocked(prisma.notification.create).mockResolvedValue({} as never);
 
       const request = new NextRequest("http://localhost:3000/api/approvals", {
         method: "POST",
@@ -238,7 +237,7 @@ describe("Approval Workflow Integration Tests", () => {
         .mockResolvedValueOnce(null) // No existing performance (for duplicate check)
         .mockResolvedValue(mockPendingPerformance as any); // Return created performance
       vi.mocked(prisma.performance.create).mockResolvedValue(mockPendingPerformance as any);
-      vi.mocked(prisma.notification.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.notification.create).mockResolvedValue({} as never);
 
       const request = new NextRequest("http://localhost:3000/api/performances", {
         method: "POST",
@@ -273,11 +272,10 @@ describe("Approval Workflow Integration Tests", () => {
 
     it("should list performance applications for venue", async () => {
       vi.mocked(prisma.event.findMany).mockResolvedValue([]);
-      vi.mocked(prisma.performance.findMany).mockResolvedValue([mockPendingPerformance] as any);
+      vi.mocked(prisma.performance.findMany).mockResolvedValue([mockPendingPerformance] as never[]);
       vi.mocked(prisma.notification.findMany).mockResolvedValue([]);
 
-      const request = new NextRequest("http://localhost:3000/api/approvals");
-      const response = await GET(request);
+      const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -295,12 +293,12 @@ describe("Approval Workflow Integration Tests", () => {
         ...mockPendingPerformance,
         event: { ...mockSeekingEvent, venue: mockVenueUser.venue, creator: mockVenueUser },
         artist: { ...mockArtistUser.artist, user: mockArtistUser },
-      } as any);
+      } as never);
       vi.mocked(prisma.performance.update).mockResolvedValue({
         ...mockPendingPerformance,
         status: "CONFIRMED",
-      } as any);
-      vi.mocked(prisma.notification.create).mockResolvedValue({} as any);
+      } as never);
+      vi.mocked(prisma.notification.create).mockResolvedValue({} as never);
 
       const request = new NextRequest("http://localhost:3000/api/approvals", {
         method: "POST",
@@ -339,12 +337,12 @@ describe("Approval Workflow Integration Tests", () => {
         ...mockPendingPerformance,
         event: { ...mockSeekingEvent, venue: mockVenueUser.venue, creator: mockVenueUser },
         artist: { ...mockArtistUser.artist, user: mockArtistUser },
-      } as any);
+      } as never);
       vi.mocked(prisma.performance.update).mockResolvedValue({
         ...mockPendingPerformance,
         status: "DECLINED",
-      } as any);
-      vi.mocked(prisma.notification.create).mockResolvedValue({} as any);
+      } as never);
+      vi.mocked(prisma.notification.create).mockResolvedValue({} as never);
 
       const request = new NextRequest("http://localhost:3000/api/approvals", {
         method: "POST",
@@ -382,7 +380,7 @@ describe("Approval Workflow Integration Tests", () => {
 
   describe("Notification System", () => {
     it("should get unread notifications for user", async () => {
-      vi.mocked(prisma.notification.findMany).mockResolvedValue([mockNotification] as any);
+      vi.mocked(prisma.notification.findMany).mockResolvedValue([mockNotification] as never[]);
       vi.mocked(prisma.notification.count).mockResolvedValue(1);
 
       const request = new NextRequest("http://localhost:3000/api/notifications?unreadOnly=true");

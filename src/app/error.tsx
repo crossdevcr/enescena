@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-export default function Error({ error }: { error: Error }) {
+export default function Error({ error }: { error: Error & { digest?: string } }) {
   return (
     <div style={{ padding: 24 }}>
       <h1 style={{ margin: 0 }}>Something went wrong</h1>
