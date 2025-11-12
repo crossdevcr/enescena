@@ -109,119 +109,144 @@ export default async function ArtistEventDetailsPage({
             {statusChip(performance.status)}
           </Stack>
 
+        {/* Event Information Card */}
         <Card>
           <CardContent>
-            <Stack spacing={2}>
-
-              <Divider />
-
-              {/* Event Details */}
+            <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
+              Event Information
+            </Typography>
+            <Stack spacing={3}>
               <Box>
-                <Typography variant="h6" gutterBottom>Event Information</Typography>
-                <Stack spacing={1}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography color="text.secondary">Venue:</Typography>
-                    <Typography fontWeight={500}>
-                      {event?.venue?.name || event?.externalVenueName || "—"}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography color="text.secondary">Date:</Typography>
-                    <Typography fontWeight={500}>
-                      {event ? formatDateTimeCR(event.eventDate) : "—"}
-                    </Typography>
-                  </Box>
-                  {event?.description && (
-                    <Box>
-                      <Typography color="text.secondary">Description:</Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5 }}>
-                        {event.description}
-                      </Typography>
-                    </Box>
-                  )}
-                </Stack>
+                <Typography variant="overline" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+                  Venue
+                </Typography>
+                <Typography variant="h6" sx={{ mt: 0.5 }}>
+                  {event?.venue?.name || event?.externalVenueName || "—"}
+                </Typography>
+              </Box>
+              
+              <Box>
+                <Typography variant="overline" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+                  Date & Time
+                </Typography>
+                <Typography variant="h6" sx={{ mt: 0.5 }}>
+                  {event ? formatDateTimeCR(event.eventDate) : "—"}
+                </Typography>
               </Box>
 
-              <Divider />
+              {(performance.proposedFee || performance.agreedFee) && (
+                <Box>
+                  <Typography variant="overline" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+                    Payment
+                  </Typography>
+                  <Stack spacing={1} sx={{ mt: 1 }}>
+                    {performance.proposedFee && (
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Typography variant="body2" color="text.secondary">Proposed Fee:</Typography>
+                        <Typography variant="h6" fontWeight={500}>
+                          ₡{performance.proposedFee.toLocaleString()}
+                        </Typography>
+                      </Box>
+                    )}
+                    {performance.agreedFee && (
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Typography variant="body2" color="text.secondary">Agreed Fee:</Typography>
+                        <Typography variant="h6" fontWeight={600} color="success.main">
+                          ₡{performance.agreedFee.toLocaleString()}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Box>
+              )}
 
-              {/* Performance Details */}
-              <Box>
-                <Typography variant="h6" gutterBottom>Performance Details</Typography>
-                <Stack spacing={1}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography color="text.secondary">Status:</Typography>
-                    <Typography fontWeight={500}>{performance.status}</Typography>
-                  </Box>
-                  {performance.proposedFee && (
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography color="text.secondary">Proposed Fee:</Typography>
-                      <Typography fontWeight={500}>
-                        ₡{performance.proposedFee.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  )}
-                  {performance.agreedFee && (
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography color="text.secondary">Agreed Fee:</Typography>
-                      <Typography fontWeight={500} color="success.main">
-                        ₡{performance.agreedFee.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  )}
-                  {performance.hours && (
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography color="text.secondary">Duration:</Typography>
-                      <Typography fontWeight={500}>{performance.hours} hours</Typography>
-                    </Box>
-                  )}
-                  {performance.startTime && (
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography color="text.secondary">Start Time:</Typography>
-                      <Typography fontWeight={500}>
-                        {formatDateTimeCR(performance.startTime)}
-                      </Typography>
-                    </Box>
-                  )}
-                  {performance.endTime && (
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography color="text.secondary">End Time:</Typography>
-                      <Typography fontWeight={500}>
-                        {formatDateTimeCR(performance.endTime)}
-                      </Typography>
-                    </Box>
-                  )}
-                  {performance.notes && (
-                    <Box>
-                      <Typography color="text.secondary">Notes from venue:</Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5 }}>
+              {(performance.hours || performance.startTime || performance.endTime) && (
+                <Box>
+                  <Typography variant="overline" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+                    Schedule
+                  </Typography>
+                  <Stack spacing={1} sx={{ mt: 1 }}>
+                    {performance.hours && (
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Typography variant="body2" color="text.secondary">Duration:</Typography>
+                        <Typography variant="body1" fontWeight={500}>{performance.hours} hours</Typography>
+                      </Box>
+                    )}
+                    {performance.startTime && (
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Typography variant="body2" color="text.secondary">Start Time:</Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {formatDateTimeCR(performance.startTime)}
+                        </Typography>
+                      </Box>
+                    )}
+                    {performance.endTime && (
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Typography variant="body2" color="text.secondary">End Time:</Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {formatDateTimeCR(performance.endTime)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Box>
+              )}
+
+              {event?.description && (
+                <Box>
+                  <Typography variant="overline" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+                    Description
+                  </Typography>
+                  <Typography variant="body1" sx={{ mt: 1, lineHeight: 1.6 }}>
+                    {event.description}
+                  </Typography>
+                </Box>
+              )}
+
+              {(performance.notes || performance.venueNotes) && (
+                <Box>
+                  <Typography variant="overline" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+                    Notes from Venue
+                  </Typography>
+                  <Stack spacing={2} sx={{ mt: 1 }}>
+                    {performance.notes && (
+                      <Typography variant="body2" sx={{ 
+                        p: 2, 
+                        backgroundColor: "grey.50", 
+                        borderRadius: 1,
+                        lineHeight: 1.5
+                      }}>
                         {performance.notes}
                       </Typography>
-                    </Box>
-                  )}
-                  {performance.venueNotes && (
-                    <Box>
-                      <Typography color="text.secondary">Additional venue notes:</Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5 }}>
+                    )}
+                    {performance.venueNotes && (
+                      <Typography variant="body2" sx={{ 
+                        p: 2, 
+                        backgroundColor: "grey.50", 
+                        borderRadius: 1,
+                        lineHeight: 1.5
+                      }}>
                         {performance.venueNotes}
                       </Typography>
-                    </Box>
-                  )}
-                </Stack>
-              </Box>
-
-              {/* Actions */}
-              {performance.status === "PENDING" && (
-                <>
-                  <Divider />
-                  <Box>
-                    <Typography variant="h6" gutterBottom>Actions</Typography>
-                    <ArtistPerformanceActions performanceId={performance.id} />
-                  </Box>
-                </>
+                    )}
+                  </Stack>
+                </Box>
               )}
             </Stack>
           </CardContent>
         </Card>
+
+        {/* Actions Section */}
+        {performance.status === "PENDING" && (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
+                Actions
+              </Typography>
+              <ArtistPerformanceActions performanceId={performance.id} />
+            </CardContent>
+          </Card>
+        )}
       </Stack>
     </Container>
     </Box>
