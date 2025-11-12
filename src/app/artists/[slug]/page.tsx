@@ -37,7 +37,7 @@ export default async function ArtistPage({ params }: PageProps) {
         </Stack>
 
         <Stack direction="row" spacing={1} flexWrap="wrap">
-          {(artist.genres ?? []).map((g) => <Chip key={g} label={g} size="small" />)}
+          {(artist.genres ?? []).map((g: string) => <Chip key={g} label={g} size="small" />)}
         </Stack>
 
         {artist.rate != null && (
