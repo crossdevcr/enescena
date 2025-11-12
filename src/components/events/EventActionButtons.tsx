@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Alert,
   Button,
@@ -48,10 +48,17 @@ interface Props {
 export default function EventActionButtons({ event, canManage }: Props) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const isMountedRef = useRef(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
   const router = useRouter();
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Form state for editing event
   const [editForm, setEditForm] = useState({
@@ -94,20 +101,28 @@ export default function EventActionButtons({ event, canManage }: Props) {
         throw new Error(data.message || "Failed to update event");
       }
 
-      setEditDialogOpen(false);
+      if (isMountedRef.current) {
+        setEditDialogOpen(false);
+      }
       router.refresh(); // Refresh the page to show updated data
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
 
 
   const handleCancelEvent = async () => {
-    setLoading(true);
-    setError("");
+    if (isMountedRef.current) {
+      setLoading(true);
+      setError("");
+    }
 
     try {
       const response = await fetch(`/api/events/${event.id}`, {
@@ -125,12 +140,18 @@ export default function EventActionButtons({ event, canManage }: Props) {
         throw new Error(data.message || "Failed to cancel event");
       }
 
-      setCancelDialogOpen(false);
+      if (isMountedRef.current) {
+        setCancelDialogOpen(false);
+      }
       router.refresh(); // Refresh the page to show updated data
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 

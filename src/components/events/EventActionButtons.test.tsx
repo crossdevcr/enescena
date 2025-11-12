@@ -108,13 +108,12 @@ describe('EventActionButtons', () => {
   describe('Loading State', () => {
     it('should disable edit button during loading state', async () => {
       // Mock a slow fetch response to simulate loading
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (global.fetch as any).mockImplementationOnce(() => 
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockImplementationOnce(() => 
         new Promise(resolve => 
-          setTimeout(() => resolve({
-            ok: true,
-            json: async () => ({ event: { ...mockEvent, title: 'Updated Title' } })
-          }), 100)
+          setTimeout(() => resolve(new Response(
+            JSON.stringify({ event: { ...mockEvent, title: 'Updated Title' } }),
+            { status: 200, statusText: 'OK' }
+          )), 100)
         )
       );
       

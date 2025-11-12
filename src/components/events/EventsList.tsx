@@ -12,7 +12,11 @@ type Event = {
   totalBudget?: number | null;
   venue?: { name: string; slug: string } | null;
   externalVenueName?: string | null;
-  performances?: any[];
+  performances?: Array<{
+    id: string;
+    artistId: string;
+    status: string;
+  }>;
   _count?: { performances: number };
 };
 

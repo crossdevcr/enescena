@@ -291,7 +291,7 @@ export default function CreateEventModal({
               <InputLabel>Status</InputLabel>
               <Select
                 value={formData.status}
-                onChange={(e) => handleChange("status")({ target: { value: e.target.value } } as any)}
+                onChange={(e) => handleChange("status")({ target: { value: e.target.value } } as React.ChangeEvent<HTMLInputElement>)}
                 label="Status"
               >
                 {statusOptions.map((option) => (
