@@ -209,22 +209,29 @@ export default async function EventDetailsPage({
                 </Typography>
                 
                 <Stack spacing={2}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography color="text.secondary">Performances:</Typography>
-                    <Typography fontWeight={600}>{event.performances.length}</Typography>
-                  </Box>
+                  <Typography variant="subtitle2" color="text.primary" sx={{ fontWeight: 600 }}>
+                    Invitations
+                  </Typography>
                   
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography color="text.secondary">Accepted:</Typography>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", pl: 2 }}>
+                    <Typography color="text.secondary">Confirmed:</Typography>
                     <Typography fontWeight={600}>
-                      {event.performances.filter((p: PerformanceData) => p.status === 'ACCEPTED').length}
+                      {event.performances.filter((p: PerformanceData) => p.status === 'CONFIRMED').length}/
+                      {event.performances.filter((p: PerformanceData) => p.status !== 'CANCELLED').length}
                     </Typography>
                   </Box>
                   
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", pl: 2 }}>
                     <Typography color="text.secondary">Pending:</Typography>
                     <Typography fontWeight={600}>
                       {event.performances.filter((p: PerformanceData) => p.status === 'PENDING').length}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: "flex", justifyContent: "space-between", pl: 2 }}>
+                    <Typography color="text.secondary">Declined:</Typography>
+                    <Typography fontWeight={600}>
+                      {event.performances.filter((p: PerformanceData) => p.status === 'DECLINED').length}
                     </Typography>
                   </Box>
                   
