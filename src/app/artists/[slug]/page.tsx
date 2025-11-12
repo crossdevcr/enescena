@@ -51,18 +51,6 @@ export default async function ArtistPage({ params }: PageProps) {
             {artist.bio}
           </Typography>
         )}
-
-        {/* Note: Booking is now handled through venue event management */}
-        <Box>
-          <Button
-            component={Link}
-            href="/venues"
-            variant="contained"
-            size="large"
-          >
-            Browse Venues
-          </Button>
-        </Box>
       </Stack>
     </Container>
     </Box>
