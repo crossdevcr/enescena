@@ -72,7 +72,7 @@ export default async function VenuesPage() {
             gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" }, 
             gap: 3 
           }}>
-            {venues.map((venue) => (
+            {venues.map((venue: any) => (
               <Card key={venue.id} sx={{ height: "100%" }}>
                 <CardActionArea 
                   component={Link} 
