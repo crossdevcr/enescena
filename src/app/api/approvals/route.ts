@@ -106,7 +106,7 @@ export async function GET() {
       }
     })
 
-    pendingApprovals.myEventApplications = createdEvents.filter(e => e.performances.length > 0)
+    pendingApprovals.myEventApplications = createdEvents.filter((e: any) => e.performances.length > 0)
 
     return NextResponse.json({
       success: true,
