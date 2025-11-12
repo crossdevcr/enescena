@@ -18,9 +18,6 @@ export default async function ArtistEventsPage({
 
   const tab = (searchParams.tab as string) || "my-events";
   const activeTab = ["my-events", "invitations"].includes(tab) ? tab : "my-events";
-  
-  const eventStatus = (searchParams.eventStatus as string) || "ALL";
-  const performanceStatus = (searchParams.performanceStatus as string) || "ALL";
 
   const user = await getCurrentUser();
   if (!user) redirect("/api/auth/login");
@@ -62,12 +59,8 @@ export default async function ArtistEventsPage({
 
   if (activeTab === "my-events") {
     // Events created by the artist
-    const eventBaseWhere = eventStatus === "ALL" 
-      ? { createdBy: user.id }
-      : { createdBy: user.id, status: eventStatus as any };
-
     const rawEvents = await prisma.event.findMany({
-      where: eventBaseWhere,
+      where: { createdBy: user.id },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: PAGE_SIZE + 1,
       select: {
@@ -86,12 +79,8 @@ export default async function ArtistEventsPage({
     events = rawEvents as EventWithDetails[];
   } else {
     // Performance invitations for the artist
-    const performanceBaseWhere = performanceStatus === "ALL"
-      ? { artistId: user.artist.id }
-      : { artistId: user.artist.id, status: performanceStatus as any };
-
     const rawPerformances = await prisma.performance.findMany({
-      where: performanceBaseWhere,
+      where: { artistId: user.artist.id },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: PAGE_SIZE + 1,
       select: {
@@ -121,8 +110,6 @@ export default async function ArtistEventsPage({
       initialEvents={events}
       initialPerformances={performances}
       activeTab={activeTab}
-      eventStatus={eventStatus}
-      performanceStatus={performanceStatus}
     />
   );
 }

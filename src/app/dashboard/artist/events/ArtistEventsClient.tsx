@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import StatusTabs from "@/components/common/StatusTabs";
+
 import EventTabs from "./EventTabs";
 import EventsList from "@/components/events/EventsList";
 import PerformancesList from "@/components/events/PerformancesList";
@@ -19,14 +19,7 @@ import { Add as AddIcon } from "@mui/icons-material";
 
 const PAGE_SIZE = 20;
 
-const EVENT_STATUSES = [
-  "ALL", "DRAFT", "SEEKING_VENUE", "PENDING_VENUE_APPROVAL", 
-  "SEEKING_ARTISTS", "CONFIRMED", "PUBLISHED", "CANCELLED", "COMPLETED"
-] as const;
 
-const PERFORMANCE_STATUSES = [
-  "ALL", "PENDING", "CONFIRMED", "DECLINED", "CANCELLED", "COMPLETED"
-] as const;
 
 type EventWithDetails = {
   id: string;
@@ -62,16 +55,12 @@ interface ArtistEventsClientProps {
   initialEvents: EventWithDetails[];
   initialPerformances: PerformanceWithDetails[];
   activeTab: string;
-  eventStatus: string;
-  performanceStatus: string;
 }
 
 export default function ArtistEventsClient({
   initialEvents,
   initialPerformances,
   activeTab,
-  eventStatus,
-  performanceStatus,
 }: ArtistEventsClientProps) {
   const router = useRouter();
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -125,12 +114,7 @@ export default function ArtistEventsClient({
               performanceCount={activeTab === "invitations" ? performancePage.length : "—"}
             />
 
-            {/* Status Filter */}
-            <StatusTabs
-              statuses={activeTab === "my-events" ? [...EVENT_STATUSES] : [...PERFORMANCE_STATUSES]}
-              basePath={`/dashboard/artist/events?tab=${activeTab}`}
-              queryKey={activeTab === "my-events" ? "eventStatus" : "performanceStatus"}
-            />
+
 
             {/* Content */}
             {activeTab === "my-events" ? (
@@ -146,7 +130,6 @@ export default function ArtistEventsClient({
             ) : (
               <PerformancesList
                 performances={performancePage}
-                status={performanceStatus}
                 getPerformanceHref={(performance) => `/dashboard/artist/events/${performance.id}`}
               />
             )}

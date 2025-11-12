@@ -20,21 +20,17 @@ type Performance = {
 
 type PerformancesListProps = {
   performances: Performance[];
-  status: string;
   getPerformanceHref: (performance: Performance) => string;
 };
 
 export default function PerformancesList({
   performances,
-  status,
   getPerformanceHref,
 }: PerformancesListProps) {
   if (performances.length === 0) {
     return (
       <Alert severity="info">
-        {status === "ALL" 
-          ? "No performance invitations yet." 
-          : `No ${status.toLowerCase()} performance invitations.`}
+        No performance invitations yet.
       </Alert>
     );
   }
