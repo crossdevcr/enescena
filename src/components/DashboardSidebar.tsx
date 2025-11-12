@@ -53,9 +53,9 @@ const navigationItems: NavigationItem[] = [
     roles: ['ARTIST']
   },
   {
-    text: 'My Gigs',
+    text: 'Events',
     icon: <EventIcon />,
-    href: '/dashboard/artist/gigs',
+    href: '/dashboard/artist/events',
     roles: ['ARTIST']
   },
   {

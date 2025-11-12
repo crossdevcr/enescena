@@ -9,7 +9,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
   Stack,
   TextField,
   Typography,
@@ -17,7 +16,7 @@ import {
   Alert,
   Tooltip,
 } from "@mui/material";
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { Add as AddIcon } from "@mui/icons-material";
 
 interface Artist {
   id: string;
@@ -69,10 +68,8 @@ export default function EventPerformanceManagement({
     }
   };
 
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [selectedPerformance, setSelectedPerformance] = useState<Performance | null>(null);
   
   const [availableArtists, setAvailableArtists] = useState<Artist[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -114,16 +111,7 @@ export default function EventPerformanceManagement({
     }
   };
 
-  const handleEditPerformance = (performance: Performance) => {
-    setSelectedPerformance(performance);
-    setFormData({
-      artistId: performance.artistId,
-      fee: performance.fee?.toString() || "",
-      hours: performance.hours?.toString() || "",
-      notes: performance.notes || "",
-    });
-    setEditDialogOpen(true);
-  };
+
 
   const handleSubmitAdd = async () => {
     if (!formData.artistId) {
@@ -164,58 +152,31 @@ export default function EventPerformanceManagement({
     }
   };
 
-  const handleSubmitEdit = async () => {
-    if (!selectedPerformance) return;
+  const handleCancelInvitation = async (performanceId: string, artistName: string) => {
+    if (!confirm(`Cancel invitation for ${artistName}? This action cannot be undone.`)) return;
 
     setLoading(true);
-    setError("");
-
+    
     try {
-      const response = await fetch(`/api/performances/${selectedPerformance.id}`, {
+      const response = await fetch(`/api/performances/${performanceId}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fee: formData.fee ? parseFloat(formData.fee) : null,
-          hours: formData.hours ? parseFloat(formData.hours) : null,
-          notes: formData.notes || null,
+          action: "CANCEL",
+          reason: "Invitation cancelled by venue"
         }),
       });
 
-      if (response.ok) {
-        setEditDialogOpen(false);
-        setSelectedPerformance(null);
-        resetForm();
-        window.location.reload(); // Refresh to show updated performance
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || "Failed to update performance");
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to cancel invitation");
       }
-    } catch {
-      setError("Failed to update performance");
+
+      window.location.reload(); // Reload to show updated data
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleRemovePerformance = async (performanceId: string) => {
-    if (!confirm("Are you sure you want to remove this performance application?")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/performances/${performanceId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        window.location.reload(); // Refresh to show updated list
-      } else {
-        alert("Failed to remove performance");
-      }
-    } catch {
-      alert("Failed to remove performance");
     }
   };
 
@@ -323,24 +284,18 @@ export default function EventPerformanceManagement({
                 )}
               </Box>
 
-              {canManage && (
-                <Stack direction="row" spacing={1}>
-                  <IconButton
+              {canManage && performance.status === 'PENDING' && (
+                <Box>
+                  <Button
                     size="small"
-                    onClick={() => handleEditPerformance(performance)}
-                    disabled={loading}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleRemovePerformance(performance.id)}
-                    disabled={loading}
+                    variant="outlined"
                     color="error"
+                    onClick={() => handleCancelInvitation(performance.id, performance.artist.name)}
+                    disabled={loading}
                   >
-                    <DeleteIcon />
-                  </IconButton>
-                </Stack>
+                    Cancel Invitation
+                  </Button>
+                </Box>
               )}
             </Box>
           ))}
@@ -419,48 +374,7 @@ export default function EventPerformanceManagement({
         </DialogActions>
       </Dialog>
 
-      {/* Edit Performance Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Performance Details</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Fee (₡)"
-              type="number"
-              fullWidth
-              value={formData.fee}
-              onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
-              inputProps={{ min: 0 }}
-            />
-            
-            <TextField
-              label="Hours"
-              type="number"
-              fullWidth
-              value={formData.hours}
-              onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
-              inputProps={{ min: 0, step: 0.5 }}
-            />
-            
-            <TextField
-              label="Notes"
-              multiline
-              rows={3}
-              fullWidth
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)} disabled={loading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmitEdit} variant="contained" disabled={loading}>
-            {loading ? "Updating..." : "Update"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+
     </Stack>
   );
 }

@@ -563,7 +563,7 @@ export class ApprovalWorkflows implements ApprovalWorkflowService {
             message: notificationMessage,
             eventId: eventId,
             performanceId: performance.id,
-            actionUrl: `/dashboard/artist/gigs`
+            actionUrl: `/dashboard/artist/events`
           });
 
           // Send email to artist if they have an email

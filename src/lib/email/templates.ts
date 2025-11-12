@@ -11,7 +11,7 @@ export function performanceInvitationForArtist(params: {
   performanceId: string;
 }) {
   const when = new Date(params.eventISO).toLocaleString("en-US", { timeZone: "America/Costa_Rica" });
-  const link = `${base}/dashboard/artist/gigs/${params.performanceId}`;
+  const link = `${base}/dashboard/artist/events/${params.performanceId}`;
   return {
     subject: `Performance invitation from ${params.venueName}`,
     html: `
@@ -157,7 +157,7 @@ export function performanceCancelledForArtist(params: {
   reason?: string;
   eventId: string;
 }) {
-  const link = `${base}/dashboard/artist/gigs`;
+  const link = `${base}/dashboard/artist/events`;
   const subject = params.wasConfirmed 
     ? `Performance cancelled - ${params.eventTitle}`
     : `Performance invitation cancelled - ${params.eventTitle}`;
@@ -175,10 +175,10 @@ export function performanceCancelledForArtist(params: {
       <p>${message}</p>
       ${params.reason ? `<p><b>Reason:</b> ${params.reason}</p>` : ''}
       <p>We apologize for any inconvenience this may cause.</p>
-      <p><a href="${link}">View your other gigs</a></p>
+      <p><a href="${link}">View your other events</a></p>
       <hr/>
       <p>Enescena</p>
     `,
-    text: `Your ${textMessage} at "${params.eventTitle}" has been cancelled${params.reason ? `: ${params.reason}` : ''}. View your other gigs at ${link}`,
+    text: `Your ${textMessage} at "${params.eventTitle}" has been cancelled${params.reason ? `: ${params.reason}` : ''}. View your other events at ${link}`,
   };
 }

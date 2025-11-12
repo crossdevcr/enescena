@@ -102,7 +102,7 @@ export default function NavBar() {
     if (safeUser?.role === 'ARTIST') {
       roleSpecificItems.push(
         { text: 'My Profile', icon: <PersonIcon />, href: '/dashboard/artist/profile' },
-        { text: 'My Gigs', icon: <EventIcon />, href: '/dashboard/artist/gigs' },
+        { text: 'Events', icon: <EventIcon />, href: '/dashboard/artist/events' },
         { text: 'Availability', icon: <SettingsIcon />, href: '/dashboard/artist/availability' }
       );
     } else if (safeUser?.role === 'VENUE') {
