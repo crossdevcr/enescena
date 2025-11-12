@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Alert, Typography } from "@mui/material";
+import { Box, Alert } from "@mui/material";
 import PerformanceCard from "./PerformanceCard";
 
 type Performance = {

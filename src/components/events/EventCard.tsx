@@ -57,7 +57,7 @@ function formatDateTimeCR(d: Date) {
 }
 
 export default function EventCard({
-  id,
+  id: _id, // eslint-disable-line @typescript-eslint/no-unused-vars
   title,
   status,
   eventDate,

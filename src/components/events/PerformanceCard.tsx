@@ -53,7 +53,7 @@ function formatDateTimeCR(d: Date) {
 }
 
 export default function PerformanceCard({
-  id,
+  id: _id, // eslint-disable-line @typescript-eslint/no-unused-vars
   status,
   proposedFee,
   agreedFee,
