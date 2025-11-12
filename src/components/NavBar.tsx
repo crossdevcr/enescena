@@ -32,7 +32,9 @@ import {
   Settings as SettingsIcon,
   Event as EventIcon,
   Business as BusinessIcon,
-  MusicNote as MusicIcon
+  MusicNote as MusicIcon,
+  Group as GroupIcon,
+  LocationOn as LocationIcon
 } from "@mui/icons-material";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigation } from "@/contexts/NavigationContext";
@@ -146,6 +148,55 @@ export default function NavBar() {
             <ListItem disablePadding>
               <ListItemButton 
                 component={Link} 
+                href="/artists"
+                onClick={handleDrawerToggle}
+                sx={{
+                  minHeight: 48,
+                  py: 1.5,
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    transform: 'translateX(4px)'
+                  }
+                }}
+              >
+                <ListItemIcon><GroupIcon /></ListItemIcon>
+                <ListItemText primary="Artists" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton 
+                component={Link} 
+                href="/venues"
+                onClick={handleDrawerToggle}
+                sx={{
+                  minHeight: 48,
+                  py: 1.5,
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'secondary.main',
+                    color: 'white',
+                    transform: 'translateX(4px)'
+                  }
+                }}
+              >
+                <ListItemIcon><LocationIcon /></ListItemIcon>
+                <ListItemText primary="Venues" />
+              </ListItemButton>
+            </ListItem>
+            
+            <Divider sx={{ my: 1 }} />
+            
+            <ListItem disablePadding>
+              <ListItemButton 
+                component={Link} 
                 href="/auth/signin"
                 onClick={handleDrawerToggle}
                 sx={{
@@ -208,6 +259,54 @@ export default function NavBar() {
                 />
               </Box>
             )}
+            
+            {/* Public pages navigation */}
+            <ListItem disablePadding>
+              <ListItemButton 
+                component={Link} 
+                href="/artists"
+                onClick={handleDrawerToggle}
+                sx={{
+                  minHeight: 48,
+                  py: 1.5,
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    transform: 'translateX(4px)'
+                  }
+                }}
+              >
+                <ListItemIcon><GroupIcon /></ListItemIcon>
+                <ListItemText primary="Artists" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton 
+                component={Link} 
+                href="/venues"
+                onClick={handleDrawerToggle}
+                sx={{
+                  minHeight: 48,
+                  py: 1.5,
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'secondary.main',
+                    color: 'white',
+                    transform: 'translateX(4px)'
+                  }
+                }}
+              >
+                <ListItemIcon><LocationIcon /></ListItemIcon>
+                <ListItemText primary="Venues" />
+              </ListItemButton>
+            </ListItem>
             
             {/* Only show navigation items if not on dashboard page */}
             {!isDashboardPage && getNavigationItems().map((item, index) => (
@@ -344,6 +443,44 @@ export default function NavBar() {
               {safeIsAuthenticated ? (
                 // Authenticated user navigation - simplified
                 <>
+                  <Button 
+                    component={Link}
+                    href="/artists"
+                    size={isTablet ? "small" : "medium"}
+                    sx={{ 
+                      textTransform: 'none',
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontWeight: 500,
+                      px: isTablet ? 1.5 : 2,
+                      minHeight: 44,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white'
+                      }
+                    }}
+                  >
+                    {isTablet ? '' : 'Artists'}
+                  </Button>
+                  
+                  <Button 
+                    component={Link}
+                    href="/venues"
+                    size={isTablet ? "small" : "medium"}
+                    sx={{ 
+                      textTransform: 'none',
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontWeight: 500,
+                      px: isTablet ? 1.5 : 2,
+                      minHeight: 44,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white'
+                      }
+                    }}
+                  >
+                    {isTablet ? '' : 'Venues'}
+                  </Button>
+                  
                   {/* Sign out button */}
                   {isLoading || !mounted ? (
                     <Skeleton 
@@ -405,6 +542,44 @@ export default function NavBar() {
               ) : (
                 // Unauthenticated user navigation
                 <>
+                  <Button 
+                    component={Link}
+                    href="/artists"
+                    size={isTablet ? "small" : "medium"}
+                    sx={{ 
+                      textTransform: 'none',
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontWeight: 500,
+                      px: isTablet ? 1.5 : 2,
+                      minHeight: 44,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white'
+                      }
+                    }}
+                  >
+                    {isTablet ? '' : 'Artists'}
+                  </Button>
+                  
+                  <Button 
+                    component={Link}
+                    href="/venues"
+                    size={isTablet ? "small" : "medium"}
+                    sx={{ 
+                      textTransform: 'none',
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontWeight: 500,
+                      px: isTablet ? 1.5 : 2,
+                      minHeight: 44,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white'
+                      }
+                    }}
+                  >
+                    {isTablet ? '' : 'Venues'}
+                  </Button>
+                  
                   <Button 
                     variant="outlined"
                     component={Link}
