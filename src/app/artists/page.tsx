@@ -66,7 +66,7 @@ export default async function ArtistsPage() {
             gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" }, 
             gap: 3 
           }}>
-            {artists.map((a) => (
+            {artists.map((a: any) => (
               <Card key={a.slug} variant="outlined" sx={{ height: "100%" }}>
                 <CardActionArea component={Link} href={`/artists/${a.slug}`}>
                   <CardContent>
