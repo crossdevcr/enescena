@@ -50,10 +50,13 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${cognito.appUrl}/?auth_error=missing_email_claim`);
   }
 
-  // Only assign default role on FIRST login; never change role on subsequent logins
-  const defaultRoleEnv = (process.env.DEFAULT_USER_ROLE || "ARTIST").toUpperCase();
-  const defaultRole =
-    defaultRoleEnv === "VENUE" || defaultRoleEnv === "ADMIN" ? defaultRoleEnv : "ARTIST";
+  // Get role from Cognito custom attribute, fallback to ARTIST if not set
+  const cognitoRole = payload["custom:role"] as string | undefined;
+  const roleFromCognito = cognitoRole?.toUpperCase();
+  const defaultRole = 
+    (roleFromCognito === "ARTIST" || roleFromCognito === "VENUE" || roleFromCognito === "ADMIN") 
+      ? roleFromCognito 
+      : "ARTIST"; // Fallback to ARTIST if no role specified
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
