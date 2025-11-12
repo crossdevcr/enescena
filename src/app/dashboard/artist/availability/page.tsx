@@ -65,7 +65,7 @@ export default async function ArtistAvailabilityPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {blocks.map((b) => (
+              {blocks.map((b: { id: string; start: Date; end: Date; reason: string | null }) => (
                 <TableRow key={b.id}>
                   <TableCell>{formatCR(b.start)}</TableCell>
                   <TableCell>{formatCR(b.end)}</TableCell>
