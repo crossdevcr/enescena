@@ -86,10 +86,8 @@ export default function VenueEventsClient({ initialEvents }: VenueEventsClientPr
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const handleEventCreated = (eventId: string) => {
-    // Refresh the page to show the new event
-    router.refresh();
-    // Optionally navigate to the new event
-    // router.push(`/dashboard/venue/events/${eventId}`);
+    // Navigate to the event management page
+    router.push(`/dashboard/venue/events/${eventId}`);
   };
 
   return (

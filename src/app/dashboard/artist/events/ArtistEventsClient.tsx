@@ -80,10 +80,8 @@ export default function ArtistEventsClient({
   const performancePage = initialPerformances.slice(0, PAGE_SIZE);
 
   const handleEventCreated = (eventId: string) => {
-    // Refresh the page to show the new event
-    router.refresh();
-    // Optionally navigate to the new event
-    // router.push(`/dashboard/artist/events/manage/${eventId}`);
+    // Navigate to the event management page
+    router.push(`/dashboard/artist/events/manage/${eventId}`);
   };
 
   return (
