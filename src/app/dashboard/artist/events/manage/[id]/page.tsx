@@ -211,7 +211,7 @@ export default async function ArtistEventManagePage({
                   Performances ({event.performances.length})
                 </Typography>
                 <Stack spacing={2}>
-                  {event.performances.map((performance) => (
+                  {event.performances.map((performance: any) => (
                     <Box 
                       key={performance.id}
                       sx={{ 
