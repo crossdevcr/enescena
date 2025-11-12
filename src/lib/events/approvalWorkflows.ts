@@ -1,7 +1,7 @@
-import { PrismaClient, $Enums } from "@prisma/client";
+import type { PrismaClient, $Enums } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 type NotificationType = $Enums.NotificationType;
-import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/mailer";
 import {
   performanceInvitationForArtist,
