@@ -30,7 +30,6 @@ type EventWithDetails = {
   createdAt: Date;
   venue: { name: string; slug: string } | null;
   externalVenueName: string | null;
-  performances: { status: string }[];
   _count: { performances: number };
 };
 

@@ -49,7 +49,7 @@ export const dynamic = "force-dynamic";
 export default async function ArtistEventManagePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   noStore();
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Box, 
@@ -11,12 +11,13 @@ import {
   Typography, 
   Alert,
   Link,
-  Container
+  Container,
+  CircularProgress
 } from "@mui/material";
 import { CheckCircle, Email } from "@mui/icons-material";
 import NextLink from "next/link";
 
-export default function ConfirmEmailPage() {
+function ConfirmEmailForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -227,5 +228,19 @@ export default function ConfirmEmailPage() {
         </Card>
       </Box>
     </Container>
+  );
+}
+
+export default function ConfirmEmailPage() {
+  return (
+    <Suspense fallback={
+      <Container>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+          <CircularProgress />
+        </Box>
+      </Container>
+    }>
+      <ConfirmEmailForm />
+    </Suspense>
   );
 }

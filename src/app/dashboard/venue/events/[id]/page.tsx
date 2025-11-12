@@ -59,7 +59,7 @@ export const dynamic = "force-dynamic";
 export default async function EventDetailsPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   noStore();
 

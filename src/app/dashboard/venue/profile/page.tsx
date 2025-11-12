@@ -8,14 +8,15 @@ export const dynamic = "force-dynamic";
 export default async function VenueProfilePage({
   searchParams,
 }: {
-  searchParams: { reason?: string };
+  searchParams: Promise<{ reason?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/api/auth/login");
   if (user.role !== "VENUE") redirect("/dashboard");
 
   const v = user.venue;
-  const showRequiredBanner = searchParams?.reason === "required";
+  const resolvedSearchParams = await searchParams;
+  const showRequiredBanner = resolvedSearchParams?.reason === "required";
 
   return (
     <Container sx={{ py: 6, maxWidth: 720 }}>

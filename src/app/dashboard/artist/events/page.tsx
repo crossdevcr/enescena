@@ -12,11 +12,12 @@ export const dynamic = "force-dynamic";
 export default async function ArtistEventsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   noStore();
 
-  const tab = (searchParams.tab as string) || "my-events";
+  const resolvedSearchParams = await searchParams;
+  const tab = (resolvedSearchParams.tab as string) || "my-events";
   const activeTab = ["my-events", "invitations"].includes(tab) ? tab : "my-events";
 
   const user = await getCurrentUser();
