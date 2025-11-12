@@ -55,6 +55,24 @@ export interface AuthResult {
  */
 export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
   try {
+    // Read environment variables inside the function
+    const functionClientId = process.env.COGNITO_CLIENT_ID!;
+    const functionRegion = process.env.COGNITO_REGION!;
+    
+    // Debug logging that will show in runtime logs
+    console.log('SignUp Function - Environment Variables Debug:', {
+      COGNITO_REGION: process.env.COGNITO_REGION,
+      COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID,
+      moduleClientId: clientId,
+      functionClientId,
+      moduleRegion: region,
+      functionRegion,
+      hasModuleClientId: !!clientId,
+      hasFunctionClientId: !!functionClientId,
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL_ENV: process.env.VERCEL_ENV
+    });
+
     const { email, password, name, userType } = params;
     
     const userAttributes: AttributeType[] = [
@@ -66,7 +84,7 @@ export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
     const secretHash = createSecretHash(email);
 
     const command = new SignUpCommand({
-      ClientId: clientId,
+      ClientId: functionClientId,
       Username: email,
       Password: password,
       UserAttributes: userAttributes,
