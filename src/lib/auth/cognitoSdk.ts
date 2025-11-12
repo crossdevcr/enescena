@@ -9,15 +9,9 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import { createHash } from "crypto";
 
-const region = process.env.COGNITO_REGION!;
-const clientId = process.env.COGNITO_CLIENT_ID!;
-const clientSecret = process.env.COGNITO_CLIENT_SECRET;
-
-// Initialize Cognito client
-const cognitoClient = new CognitoIdentityProviderClient({ region });
-
+// Initialize Cognito client - we'll create this dynamically in each function
 // Helper function to create secret hash (required if client secret is configured)
-function createSecretHash(username: string): string | undefined {
+function createSecretHash(username: string, clientId: string, clientSecret?: string): string | undefined {
   if (!clientSecret) return undefined;
   
   const message = username + clientId;
@@ -58,20 +52,21 @@ export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
     // Read environment variables inside the function
     const functionClientId = process.env.COGNITO_CLIENT_ID!;
     const functionRegion = process.env.COGNITO_REGION!;
+    const functionClientSecret = process.env.COGNITO_CLIENT_SECRET;
     
     // Debug logging that will show in runtime logs
     console.log('SignUp Function - Environment Variables Debug:', {
       COGNITO_REGION: process.env.COGNITO_REGION,
       COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID,
-      moduleClientId: clientId,
       functionClientId,
-      moduleRegion: region,
       functionRegion,
-      hasModuleClientId: !!clientId,
       hasFunctionClientId: !!functionClientId,
       NODE_ENV: process.env.NODE_ENV,
       VERCEL_ENV: process.env.VERCEL_ENV
     });
+
+    // Create Cognito client with runtime environment variables
+    const cognitoClient = new CognitoIdentityProviderClient({ region: functionRegion });
 
     const { email, password, name, userType } = params;
     
@@ -81,7 +76,7 @@ export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
       { Name: "custom:role", Value: userType },
     ];
 
-    const secretHash = createSecretHash(email);
+    const secretHash = createSecretHash(email, functionClientId, functionClientSecret);
 
     const command = new SignUpCommand({
       ClientId: functionClientId,
@@ -124,10 +119,15 @@ export async function signUpUser(params: SignUpParams): Promise<AuthResult> {
  */
 export async function confirmSignUp(email: string, confirmationCode: string): Promise<AuthResult> {
   try {
-    const secretHash = createSecretHash(email);
+    const functionClientId = process.env.COGNITO_CLIENT_ID!;
+    const functionRegion = process.env.COGNITO_REGION!;
+    const functionClientSecret = process.env.COGNITO_CLIENT_SECRET;
+    
+    const cognitoClient = new CognitoIdentityProviderClient({ region: functionRegion });
+    const secretHash = createSecretHash(email, functionClientId, functionClientSecret);
 
     const command = new ConfirmSignUpCommand({
-      ClientId: clientId,
+      ClientId: functionClientId,
       Username: email,
       ConfirmationCode: confirmationCode,
       ...(secretHash && { SecretHash: secretHash }),
@@ -166,11 +166,16 @@ export async function confirmSignUp(email: string, confirmationCode: string): Pr
  */
 export async function signInUser(params: SignInParams): Promise<AuthResult> {
   try {
+    const functionClientId = process.env.COGNITO_CLIENT_ID!;
+    const functionRegion = process.env.COGNITO_REGION!;
+    const functionClientSecret = process.env.COGNITO_CLIENT_SECRET;
+    
+    const cognitoClient = new CognitoIdentityProviderClient({ region: functionRegion });
     const { email, password } = params;
-    const secretHash = createSecretHash(email);
+    const secretHash = createSecretHash(email, functionClientId, functionClientSecret);
 
     const command = new InitiateAuthCommand({
-      ClientId: clientId,
+      ClientId: functionClientId,
       AuthFlow: "USER_PASSWORD_AUTH",
       AuthParameters: {
         USERNAME: email,
@@ -235,6 +240,9 @@ export async function signInUser(params: SignInParams): Promise<AuthResult> {
  */
 export async function getUserFromToken(accessToken: string) {
   try {
+    const functionRegion = process.env.COGNITO_REGION!;
+    const cognitoClient = new CognitoIdentityProviderClient({ region: functionRegion });
+    
     const command = new GetUserCommand({
       AccessToken: accessToken,
     });
@@ -243,7 +251,7 @@ export async function getUserFromToken(accessToken: string) {
     
     // Parse user attributes
     const attributes: Record<string, string> = {};
-    response.UserAttributes?.forEach(attr => {
+    response.UserAttributes?.forEach((attr: any) => {
       if (attr.Name && attr.Value) {
         attributes[attr.Name] = attr.Value;
       }
@@ -268,8 +276,12 @@ export async function getUserFromToken(accessToken: string) {
  */
 export async function refreshAuthToken(refreshToken: string): Promise<AuthResult> {
   try {
+    const functionClientId = process.env.COGNITO_CLIENT_ID!;
+    const functionRegion = process.env.COGNITO_REGION!;
+    const cognitoClient = new CognitoIdentityProviderClient({ region: functionRegion });
+    
     const command = new InitiateAuthCommand({
-      ClientId: clientId,
+      ClientId: functionClientId,
       AuthFlow: "REFRESH_TOKEN_AUTH",
       AuthParameters: {
         REFRESH_TOKEN: refreshToken,
@@ -306,10 +318,15 @@ export async function refreshAuthToken(refreshToken: string): Promise<AuthResult
  */
 export async function resendConfirmationCode(email: string): Promise<AuthResult> {
   try {
+    const functionClientId = process.env.COGNITO_CLIENT_ID!;
+    const functionRegion = process.env.COGNITO_REGION!;
+    const functionClientSecret = process.env.COGNITO_CLIENT_SECRET;
+    const cognitoClient = new CognitoIdentityProviderClient({ region: functionRegion });
+    
     const command = new ResendConfirmationCodeCommand({
-      ClientId: clientId,
+      ClientId: functionClientId,
       Username: email,
-      SecretHash: createSecretHash(email),
+      SecretHash: createSecretHash(email, functionClientId, functionClientSecret),
     });
 
     await cognitoClient.send(command);
