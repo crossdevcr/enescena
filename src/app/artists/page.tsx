@@ -17,6 +17,20 @@ import {
 import { Dashboard as DashboardIcon } from "@mui/icons-material";
 import { formatPrice } from "@/lib/format";
 
+type ArtistListItem = {
+  id: string;
+  slug: string;
+  name: string;
+  bio: string | null;
+  imageUrl: string | null;
+  genres: string[];
+  rate: number | null;
+  city: string | null;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export const dynamic = "force-dynamic";
 
 export default async function ArtistsPage() {
@@ -66,7 +80,7 @@ export default async function ArtistsPage() {
             gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" }, 
             gap: 3 
           }}>
-            {artists.map((a: any) => (
+            {artists.map((a: ArtistListItem) => (
               <Card key={a.slug} variant="outlined" sx={{ height: "100%" }}>
                 <CardActionArea component={Link} href={`/artists/${a.slug}`}>
                   <CardContent>
@@ -84,7 +98,7 @@ export default async function ArtistsPage() {
                       </Stack>
 
                       <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {(a.genres ?? []).slice(0, 3).map((g) => (
+                        {(a.genres ?? []).slice(0, 3).map((g: string) => (
                           <Chip key={g} label={g} size="small" />
                         ))}
                       </Stack>

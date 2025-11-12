@@ -44,7 +44,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   // Access control: venue owner or admin can see all details, artists can see if they're part of the event
   const isVenueOwner = user.venue && event.venueId === user.venue.id;
-  const isEventArtist = user.artist && event.performances.some((p: any) => p.artistId === user.artist?.id);
+  const isEventArtist = user.artist && event.performances.some((p: { artistId: string }) => p.artistId === user.artist?.id);
   const isAdmin = user.role === "ADMIN";
 
   if (!isVenueOwner && !isEventArtist && !isAdmin) {
