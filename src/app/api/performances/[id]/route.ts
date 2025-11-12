@@ -9,7 +9,7 @@ import { ApprovalWorkflows } from "@/lib/events/approvalWorkflows";
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -18,7 +18,7 @@ export async function PATCH(
     }
 
     const { action, reason } = await req.json();
-    const performanceId = params.id;
+    const { id: performanceId } = await params;
 
     const workflows = new ApprovalWorkflows(prisma);
 
@@ -96,7 +96,7 @@ export async function PATCH(
  */
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -104,8 +104,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const performance = await prisma.performance.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         event: {
           include: {

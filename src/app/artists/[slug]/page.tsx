@@ -5,7 +5,7 @@ import { Avatar, Box, Button, Chip, Container, Stack, Typography } from "@mui/ma
 import Link from "next/link";
 // Note: RequestBookingDialog replaced with venue-initiated invitations
 
-type PageProps = { params: { slug: string } };
+type PageProps = { params: Promise<{ slug: string }> };
 
 export default async function ArtistPage({ params }: PageProps) {
   const { slug } = await params;

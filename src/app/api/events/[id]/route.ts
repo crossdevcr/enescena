@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
  * GET /api/events/[id]
  * Get event details
  */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const jar = await cookies();
@@ -58,7 +58,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
  * PATCH /api/events/[id]
  * Update event details (venue owner only)
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const jar = await cookies();
@@ -214,7 +214,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
  * DELETE /api/events/[id]
  * Delete event (venue owner only)
  */
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const jar = await cookies();
