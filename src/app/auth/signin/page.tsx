@@ -11,7 +11,6 @@ import {
   Typography, 
   Alert,
   Link,
-  Container,
   InputAdornment,
   IconButton
 } from "@mui/material";
@@ -271,7 +270,7 @@ export default function LoginPage() {
 
             <Box sx={{ textAlign: "center", mt: 3 }}>
               <Typography variant="body2" color="text.secondary">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link component={NextLink} href="/auth/signup" underline="hover">
                   Sign up here
                 </Link>

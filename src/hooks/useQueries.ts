@@ -11,11 +11,11 @@ export const queryKeys = {
   event: (id: string) => ['events', id] as const,
   venueEvents: (venueId: string) => ['events', 'venue', venueId] as const,
   
-  // Bookings
-  bookings: ['bookings'] as const,
-  booking: (id: string) => ['bookings', id] as const,
-  venueBookings: (venueId: string) => ['bookings', 'venue', venueId] as const,
-  artistBookings: (artistId: string) => ['bookings', 'artist', artistId] as const,
+  // Performances (replaces bookings)
+  performances: ['performances'] as const,
+  performance: (id: string) => ['performances', id] as const,
+  venuePerformances: (venueId: string) => ['performances', 'venue', venueId] as const,
+  artistPerformances: (artistId: string) => ['performances', 'artist', artistId] as const,
   
   // Artists
   artists: ['artists'] as const,
@@ -87,16 +87,16 @@ export function useEvent(id: string) {
   });
 }
 
-// Booking Queries
-export function useBookings(filters?: { status?: string; venueId?: string; artistId?: string }) {
+// Performance Queries (replaces booking queries)
+export function usePerformances(filters?: { status?: string; venueId?: string; artistId?: string }) {
   let queryKey: readonly string[];
   
   if (filters?.venueId) {
-    queryKey = queryKeys.venueBookings(filters.venueId);
+    queryKey = queryKeys.venuePerformances(filters.venueId);
   } else if (filters?.artistId) {
-    queryKey = queryKeys.artistBookings(filters.artistId);
+    queryKey = queryKeys.artistPerformances(filters.artistId);
   } else {
-    queryKey = queryKeys.bookings;
+    queryKey = queryKeys.performances;
   }
   
   return useQuery({
@@ -107,11 +107,11 @@ export function useBookings(filters?: { status?: string; venueId?: string; artis
       if (filters?.venueId) params.set('venueId', filters.venueId);
       if (filters?.artistId) params.set('artistId', filters.artistId);
       
-      const response = await fetch(`/api/bookings?${params}`, {
+      const response = await fetch(`/api/performances?${params}`, {
         credentials: 'include',
       });
       
-      if (!response.ok) throw new Error('Failed to fetch bookings');
+      if (!response.ok) throw new Error('Failed to fetch performances');
       return response.json();
     },
   });
@@ -122,7 +122,7 @@ export function useCreateEvent() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (eventData: any) => {
+    mutationFn: async (eventData: Record<string, unknown>) => {
       const response = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,25 +140,76 @@ export function useCreateEvent() {
   });
 }
 
-export function useUpdateBookingStatus() {
+export function useRespondToPerformanceInvitation() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
-      const response = await fetch(`/api/bookings/${bookingId}/status`, {
-        method: 'PATCH',
+    mutationFn: async ({ performanceId, action }: { performanceId: string; action: 'accept' | 'decline' }) => {
+      const response = await fetch(`/api/performances/${performanceId}/respond`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ action }),
       });
       
-      if (!response.ok) throw new Error('Failed to update booking status');
+      if (!response.ok) throw new Error('Failed to respond to performance invitation');
       return response.json();
     },
-    onSuccess: (_, { bookingId }) => {
+    onSuccess: (_, { performanceId }) => {
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
-      queryClient.invalidateQueries({ queryKey: queryKeys.booking(bookingId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.performances });
+      queryClient.invalidateQueries({ queryKey: queryKeys.performance(performanceId) });
+    },
+  });
+}
+
+export function useRequestEvent() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (eventData: {
+      title: string;
+      description: string;
+      eventDate: string;
+      budget?: number;
+      venueSlug: string;
+    }) => {
+      const response = await fetch('/api/events/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(eventData),
+      });
+      
+      if (!response.ok) throw new Error('Failed to request event');
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate events queries
+      queryClient.invalidateQueries({ queryKey: queryKeys.events });
+    },
+  });
+}
+
+export function useRespondToEventRequest() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ eventId, action, reason }: { eventId: string; action: 'approve' | 'decline'; reason?: string }) => {
+      const response = await fetch(`/api/events/${eventId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action, reason }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to respond to event request');
+      return response.json();
+    },
+    onSuccess: (_, { eventId }) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: queryKeys.events });
+      queryClient.invalidateQueries({ queryKey: queryKeys.event(eventId) });
     },
   });
 }

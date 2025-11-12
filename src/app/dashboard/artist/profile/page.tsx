@@ -1,4 +1,4 @@
-import { Box, Container, Stack, Typography } from "@mui/material";
+import { Container, Stack, Typography } from "@mui/material";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { redirect } from "next/navigation";
 import ArtistProfileForm from "./ArtistProfileForm";

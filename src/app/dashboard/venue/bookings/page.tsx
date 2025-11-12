@@ -7,9 +7,31 @@ import {
   TableHead, TableRow, Typography
 } from "@mui/material";
 import Link from "next/link";
-import VenueBookingActions from "@/components/booking/VenueBookingActions";
+// import VenueBookingActions from "@/components/booking/VenueBookingActions";
 import StatusTabs from "@/components/common/StatusTabs";
 import { unstable_noStore as noStore } from "next/cache";
+
+interface BookingData {
+  id: string;
+  hours: number | null;
+  notes: string | null;
+  agreedFee: number | null;
+  proposedFee: number | null;
+  status: string;
+  createdAt: Date;
+  artist: {
+    name: string;
+    slug: string;
+    rate: number | null;
+  } | null;
+  event: {
+    id: string;
+    title: string;
+    slug: string;
+    status: string;
+    eventDate: Date;
+  } | null;
+}
 
 function formatDateTimeCR(d: Date) {
   try {
@@ -29,7 +51,7 @@ function formatDateTimeCR(d: Date) {
 function statusChip(status: string) {
   const map: Record<string, "default" | "warning" | "success" | "error" | "info"> = {
     PENDING: "warning",
-    ACCEPTED: "success",
+    CONFIRMED: "success",
     DECLINED: "error",
     CANCELLED: "default",
     COMPLETED: "info",
@@ -39,7 +61,7 @@ function statusChip(status: string) {
 
 export const dynamic = "force-dynamic";
 
-const STATUSES = ["ALL", "PENDING", "ACCEPTED", "DECLINED", "CANCELLED", "COMPLETED"] as const;
+const STATUSES = ["ALL", "PENDING", "CONFIRMED", "DECLINED", "CANCELLED", "COMPLETED"] as const;
 type Status = typeof STATUSES[number];
 
 const PAGE_SIZE = 10;
@@ -63,10 +85,14 @@ export default async function VenueBookingsPage({
   if (!user.venue) redirect("/dashboard/venue/profile?reason=required");
 
   // Base where for this venue (plus optional status)
-  const baseWhere =
-    status === "ALL"
-      ? { venueId: user.venue!.id }
-      : { venueId: user.venue!.id, status };
+  const baseWhere = status === "ALL" 
+    ? { 
+        event: { venueId: user.venue!.id }
+      }
+    : { 
+        event: { venueId: user.venue!.id },
+        status 
+      };
 
   // Cursor filter for "next" page (keyset)
   const cursorWhere =
@@ -84,24 +110,28 @@ export default async function VenueBookingsPage({
         }
       : {};
 
-  const bookings = await prisma.booking.findMany({
-    where: { ...baseWhere, ...cursorWhere },
+  const performances = await prisma.performance.findMany({
+    where: { 
+      ...baseWhere,
+      ...cursorWhere 
+    },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: PAGE_SIZE + 1, // fetch one extra to know if there's another page
     select: {
       id: true,
-      eventDate: true,
       hours: true,
-      note: true,
+      notes: true,
+      agreedFee: true,
+      proposedFee: true,
       status: true,
       createdAt: true,
       artist: { select: { name: true, slug: true, rate: true } },
-      event: { select: { id: true, title: true, slug: true, status: true } },
+      event: { select: { id: true, title: true, slug: true, status: true, eventDate: true } },
     },
   });
 
-  const hasNext = bookings.length > PAGE_SIZE;
-  const page = hasNext ? bookings.slice(0, PAGE_SIZE) : bookings;
+  const hasNext = performances.length > PAGE_SIZE;
+  const page = hasNext ? performances.slice(0, PAGE_SIZE) : performances;
 
   // Compute next cursor (from the last item of the current page)
   const last = page[page.length - 1];
@@ -166,7 +196,7 @@ export default async function VenueBookingsPage({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {page.map((b) => (
+                {page.map((b: BookingData) => (
                   <TableRow key={b.id} hover>
                     <TableCell>
                       <Stack>
@@ -193,7 +223,7 @@ export default async function VenueBookingsPage({
                           </Typography>
                         ) : null}
                         <Typography variant="body2" color="text.secondary">
-                          {formatDateTimeCR(b.eventDate)}
+                          {b.event ? formatDateTimeCR(b.event.eventDate) : "—"}
                         </Typography>
                       </Stack>
                     </TableCell>
@@ -210,7 +240,7 @@ export default async function VenueBookingsPage({
                       <Stack direction="row" spacing={1}>
                         {/* Venue can act on PENDING */}
                         {b.status === "PENDING" && (
-                          <VenueBookingActions bookingId={b.id} />
+                          <Button size="small" variant="outlined">Actions</Button>
                         )}
                         
                         {/* View details */}

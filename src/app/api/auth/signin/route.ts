@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = signInSchema.safeParse(body);
     if (!validationResult.success) {
-      const errors = validationResult.error.issues.reduce((acc: Record<string, string>, error: any) => {
-        acc[error.path[0]] = error.message;
+      const errors = validationResult.error.issues.reduce((acc: Record<string, string>, error) => {
+        acc[String(error.path[0])] = error.message;
         return acc;
       }, {} as Record<string, string>);
       

@@ -1,9 +1,11 @@
 // src/app/artists/page.tsx
 import Link from "next/link";
 import { getArtists } from "@/lib/data";
+import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
   Avatar,
   Box,
+  Button,
   Card,
   CardActionArea,
   CardContent,
@@ -12,13 +14,16 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import Grid from "@mui/material/Grid"; // Grid v2 in MUI v7
+import { Dashboard as DashboardIcon } from "@mui/icons-material";
 import { formatPrice } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function ArtistsPage() {
-  const artists = await getArtists();
+  const [artists, user] = await Promise.all([
+    getArtists(),
+    getCurrentUser()
+  ]);
 
   return (
     <Box sx={{ 
@@ -27,15 +32,42 @@ export default async function ArtistsPage() {
       py: 4 
     }}>
       <Container sx={{ py: 6 }}>
-        <Stack spacing={3}>
-        <Typography variant="h4" fontWeight={700}>
-          Artists
-        </Typography>
+        <Stack spacing={4}>
+          {/* Back to Dashboard button for authenticated users */}
+          {user && (
+            <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+              <Button 
+                component={Link} 
+                href="/dashboard" 
+                variant="outlined" 
+                startIcon={<DashboardIcon />}
+                size="small"
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 500
+                }}
+              >
+                Back to Dashboard
+              </Button>
+            </Box>
+          )}
+          
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="h3" fontWeight={700} textAlign="center">
+              Artists
+            </Typography>
+            <Typography variant="h6" color="text.secondary" textAlign="center">
+              Discover talented artists and invite them to your events
+            </Typography>
+          </Stack>
 
-        <Grid container spacing={3}>
-          {artists.map((a) => (
-            <Grid key={a.slug} size={{ xs: 12, sm: 6, md: 4 }}>
-              <Card variant="outlined" sx={{ height: "100%" }}>
+          <Box sx={{ 
+            display: "grid", 
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" }, 
+            gap: 3 
+          }}>
+            {artists.map((a) => (
+              <Card key={a.slug} variant="outlined" sx={{ height: "100%" }}>
                 <CardActionArea component={Link} href={`/artists/${a.slug}`}>
                   <CardContent>
                     <Stack spacing={1.5}>
@@ -66,9 +98,8 @@ export default async function ArtistsPage() {
                   </CardContent>
                 </CardActionArea>
               </Card>
-            </Grid>
-          ))}
-        </Grid>
+            ))}
+          </Box>
       </Stack>
     </Container>
     </Box>

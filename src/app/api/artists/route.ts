@@ -25,7 +25,7 @@ export async function GET(req: Request) {
   const search = searchParams.get("search");
   const limit = parseInt(searchParams.get("limit") || "20");
 
-  let whereClause: any = {};
+  let whereClause: Record<string, unknown> = {};
 
   if (search) {
     whereClause = {

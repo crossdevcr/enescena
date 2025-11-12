@@ -146,7 +146,7 @@ export default function ConfirmEmailPage() {
                 Confirm Your Email
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                We've sent a confirmation code to
+                We&apos;ve sent a confirmation code to
               </Typography>
               <Typography variant="body2" fontWeight="bold" sx={{ mt: 1 }}>
                 {email}
@@ -204,7 +204,7 @@ export default function ConfirmEmailPage() {
 
             <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Didn't receive the code?
+                Didn&apos;t receive the code?
               </Typography>
               <Button
                 variant="text"

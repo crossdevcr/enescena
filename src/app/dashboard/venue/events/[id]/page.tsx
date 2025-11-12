@@ -2,7 +2,6 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -16,6 +15,19 @@ import {
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import EventActionButtons from "@/components/events/EventActionButtons";
+import EventPerformanceManagement from "@/components/events/EventPerformanceManagement";
+
+interface PerformanceData {
+  artistId?: string;
+  status: string;
+  artist: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+}
+
+
 
 function statusChip(status: string) {
   const map: Record<string, "default" | "warning" | "success" | "error" | "info"> = {
@@ -59,17 +71,11 @@ export default async function EventDetailsPage({
     where: { id },
     include: {
       venue: { select: { id: true, name: true, slug: true, userId: true } },
-      eventArtists: {
+      performances: {
         include: {
           artist: { select: { id: true, name: true, slug: true } }
         },
         orderBy: { createdAt: "asc" }
-      },
-      bookings: {
-        include: {
-          artist: { select: { id: true, name: true, slug: true } }
-        },
-        orderBy: { createdAt: "desc" }
       }
     }
   });
@@ -77,11 +83,11 @@ export default async function EventDetailsPage({
   if (!event) return notFound();
 
   // Access control: venue owner or admin can manage, artists can view if part of event
-  const isVenueOwner = user.venue && event.venue.userId === user.id;
-  const isEventArtist = user.artist && event.eventArtists.some(ea => ea.artistId === user.artist?.id);
+  const isVenueOwner = user.venue && event.venue?.userId === user.id;
+  const isPerformingArtist = user.artist && event.performances.some((p: PerformanceData) => p.artistId === user.artist?.id);
   const isAdmin = user.role === "ADMIN";
 
-  if (!isVenueOwner && !isEventArtist && !isAdmin) {
+  if (!isVenueOwner && !isPerformingArtist && !isAdmin) {
     redirect("/dashboard");
   }
 
@@ -117,7 +123,7 @@ export default async function EventDetailsPage({
               {event.title}
             </Typography>
             <Typography color="text.secondary">
-              {event.venue.name}
+              {event.venue?.name}
             </Typography>
           </Stack>
           {statusChip(event.status)}
@@ -148,15 +154,15 @@ export default async function EventDetailsPage({
                     </Typography>
                   )}
                   
-                  {event.hours && (
+                  {event.totalHours && (
                     <Typography>
-                      <strong>Duration:</strong> {event.hours} hours
+                      <strong>Duration:</strong> {event.totalHours} hours
                     </Typography>
                   )}
                   
-                  {event.budget && (
+                  {event.totalBudget && (
                     <Typography>
-                      <strong>Budget:</strong> ₡{event.budget.toLocaleString()}
+                      <strong>Budget:</strong> ₡{event.totalBudget.toLocaleString()}
                     </Typography>
                   )}
                   
@@ -177,106 +183,20 @@ export default async function EventDetailsPage({
               </CardContent>
             </Card>
 
-            {/* Artists Management */}
+            {/* Performance Management */}
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Artists ({event.eventArtists.length})
-                </Typography>
-                
-                {event.eventArtists.length > 0 ? (
-                  <Stack spacing={2} sx={{ mt: 2 }}>
-                    {event.eventArtists.map((eventArtist) => (
-                      <Box 
-                        key={eventArtist.id}
-                        sx={{ 
-                          p: 2, 
-                          borderRadius: 1, 
-                          bgcolor: "action.hover",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center"
-                        }}
-                      >
-                        <Stack>
-                          <Typography variant="subtitle2">
-                            {eventArtist.artist.name}
-                          </Typography>
-                          {eventArtist.notes && (
-                            <Typography variant="caption" color="text.secondary">
-                              {eventArtist.notes}
-                            </Typography>
-                          )}
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Chip 
-                            label={eventArtist.confirmed ? "Confirmed" : "Pending"} 
-                            size="small" 
-                            color={eventArtist.confirmed ? "success" : "default"} 
-                          />
-                        </Stack>
-                      </Box>
-                    ))}
-                  </Stack>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                    No artists added yet. Use the "Add Artists" button to invite artists to this event.
-                  </Typography>
-                )}
+                <EventPerformanceManagement
+                  eventId={event.id}
+                  performances={event.performances}
+                  canManage={canManage}
+                  currentUserId={user.id}
+                  eventStatus={event.status}
+                />
               </CardContent>
             </Card>
 
-            {/* Related Bookings */}
-            {event.bookings.length > 0 && (
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Related Bookings ({event.bookings.length})
-                  </Typography>
-                  
-                  <Stack spacing={2}>
-                    {event.bookings.map((booking) => (
-                      <Box 
-                        key={booking.id}
-                        sx={{ 
-                          p: 2, 
-                          borderRadius: 1, 
-                          bgcolor: "action.hover",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center"
-                        }}
-                      >
-                        <Stack>
-                          <Typography variant="subtitle2">
-                            {booking.artist.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDateTimeCR(booking.eventDate)}
-                            {booking.hours && ` • ${booking.hours}h`}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Chip 
-                            label={booking.status} 
-                            size="small" 
-                            color={booking.status === "ACCEPTED" ? "success" : "default"} 
-                          />
-                          <Button
-                            component={Link}
-                            href={`/dashboard/bookings/${booking.id}`}
-                            size="small"
-                            variant="outlined"
-                          >
-                            View
-                          </Button>
-                        </Stack>
-                      </Box>
-                    ))}
-                  </Stack>
-                </CardContent>
-              </Card>
-            )}
+
           </Stack>
 
           {/* Sidebar */}
@@ -289,27 +209,36 @@ export default async function EventDetailsPage({
                 </Typography>
                 
                 <Stack spacing={2}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography color="text.secondary">Artists:</Typography>
-                    <Typography fontWeight={600}>{event.eventArtists.length}</Typography>
-                  </Box>
+                  <Typography variant="subtitle2" color="text.primary" sx={{ fontWeight: 600 }}>
+                    Invitations
+                  </Typography>
                   
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", pl: 2 }}>
                     <Typography color="text.secondary">Confirmed:</Typography>
                     <Typography fontWeight={600}>
-                      {event.eventArtists.filter(ea => ea.confirmed).length}
+                      {event.performances.filter((p: PerformanceData) => p.status === 'CONFIRMED').length}/
+                      {event.performances.filter((p: PerformanceData) => p.status !== 'CANCELLED').length}
                     </Typography>
                   </Box>
                   
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography color="text.secondary">Bookings:</Typography>
-                    <Typography fontWeight={600}>{event.bookings.length}</Typography>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", pl: 2 }}>
+                    <Typography color="text.secondary">Pending:</Typography>
+                    <Typography fontWeight={600}>
+                      {event.performances.filter((p: PerformanceData) => p.status === 'PENDING').length}
+                    </Typography>
                   </Box>
                   
-                  {event.budget && (
+                  <Box sx={{ display: "flex", justifyContent: "space-between", pl: 2 }}>
+                    <Typography color="text.secondary">Declined:</Typography>
+                    <Typography fontWeight={600}>
+                      {event.performances.filter((p: PerformanceData) => p.status === 'DECLINED').length}
+                    </Typography>
+                  </Box>
+                  
+                  {event.totalBudget && (
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                       <Typography color="text.secondary">Budget:</Typography>
-                      <Typography fontWeight={600}>₡{event.budget.toLocaleString()}</Typography>
+                      <Typography fontWeight={600}>₡{event.totalBudget.toLocaleString()}</Typography>
                     </Box>
                   )}
                 </Stack>

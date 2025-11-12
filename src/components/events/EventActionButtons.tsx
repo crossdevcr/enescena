@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardContent,
@@ -15,7 +14,7 @@ import {
   Typography,
   TextField,
   MenuItem,
-  Chip,
+  Tooltip,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 
@@ -26,13 +25,13 @@ interface Event {
   description: string | null;
   eventDate: Date;
   endDate: Date | null;
-  hours: number | null;
-  budget: number | null;
+  totalHours: number | null;
+  totalBudget: number | null;
   status: string;
-  eventArtists: Array<{
+  performances: Array<{
     id: string;
     artistId: string;
-    confirmed: boolean;
+    status: string;
     artist: {
       id: string;
       name: string;
@@ -48,17 +47,18 @@ interface Props {
 
 export default function EventActionButtons({ event, canManage }: Props) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [addArtistDialogOpen, setAddArtistDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const isMountedRef = useRef(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [availableArtists, setAvailableArtists] = useState<Array<{
-    id: string;
-    name: string;
-    slug: string;
-  }>>([]);
   
   const router = useRouter();
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Form state for editing event
   const [editForm, setEditForm] = useState({
@@ -66,14 +66,9 @@ export default function EventActionButtons({ event, canManage }: Props) {
     description: event.description || "",
     eventDate: new Date(event.eventDate).toISOString().slice(0, 16),
     endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : "",
-    hours: event.hours?.toString() || "",
-    budget: event.budget?.toString() || "",
+    totalHours: event.totalHours?.toString() || "",
+    totalBudget: event.totalBudget?.toString() || "",
     status: event.status,
-  });
-
-  const [addArtistForm, setAddArtistForm] = useState({
-    artistId: "",
-    searchTerm: "",
   });
 
   if (!canManage) {
@@ -95,8 +90,8 @@ export default function EventActionButtons({ event, canManage }: Props) {
           description: editForm.description || null,
           eventDate: editForm.eventDate,
           endDate: editForm.endDate || null,
-          hours: editForm.hours ? parseInt(editForm.hours) : null,
-          budget: editForm.budget ? parseInt(editForm.budget) : null,
+          totalHours: editForm.totalHours ? parseInt(editForm.totalHours) : null,
+          totalBudget: editForm.totalBudget ? parseInt(editForm.totalBudget) : null,
           status: editForm.status,
         }),
       });
@@ -106,53 +101,28 @@ export default function EventActionButtons({ event, canManage }: Props) {
         throw new Error(data.message || "Failed to update event");
       }
 
-      setEditDialogOpen(false);
-      router.refresh(); // Refresh the page to show updated data
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddArtist = async () => {
-    if (!addArtistForm.artistId) {
-      setError("Please select an artist");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(`/api/events/${event.id}/artists`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          artistId: addArtistForm.artistId,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to add artist");
+      if (isMountedRef.current) {
+        setEditDialogOpen(false);
       }
-
-      setAddArtistDialogOpen(false);
-      setAddArtistForm({ artistId: "", searchTerm: "" });
       router.refresh(); // Refresh the page to show updated data
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
+
+
 
   const handleCancelEvent = async () => {
-    setLoading(true);
-    setError("");
+    if (isMountedRef.current) {
+      setLoading(true);
+      setError("");
+    }
 
     try {
       const response = await fetch(`/api/events/${event.id}`, {
@@ -170,36 +140,22 @@ export default function EventActionButtons({ event, canManage }: Props) {
         throw new Error(data.message || "Failed to cancel event");
       }
 
-      setCancelDialogOpen(false);
+      if (isMountedRef.current) {
+        setCancelDialogOpen(false);
+      }
       router.refresh(); // Refresh the page to show updated data
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const searchArtists = async (searchTerm: string) => {
-    if (searchTerm.length < 2) {
-      setAvailableArtists([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/artists?search=${encodeURIComponent(searchTerm)}`);
-      if (response.ok) {
-        const data = await response.json();
-        // Filter out artists already in the event
-        const existingArtistIds = event.eventArtists.map(ea => ea.artistId);
-        const filteredArtists = data.artists?.filter((artist: any) => 
-          !existingArtistIds.includes(artist.id)
-        ) || [];
-        setAvailableArtists(filteredArtists);
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : "An error occurred");
       }
-    } catch (error) {
-      console.error("Failed to search artists:", error);
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
+
+
 
   return (
     <Card>
@@ -215,23 +171,25 @@ export default function EventActionButtons({ event, canManage }: Props) {
             </Alert>
           )}
           
-          <Button
-            variant="outlined"
-            fullWidth
-            disabled={event.status === "CANCELLED" || loading}
-            onClick={() => setEditDialogOpen(true)}
+          <Tooltip
+            title={
+              event.status === "CANCELLED" ? "Cannot edit details of a cancelled event." :
+              event.status === "COMPLETED" ? "Cannot edit details of a completed event." :
+              loading ? "Processing..." : ""
+            }
+            disableHoverListener={!["CANCELLED", "COMPLETED"].includes(event.status) && !loading}
           >
-            Edit Event Details
-          </Button>
-          
-          <Button
-            variant="outlined"
-            fullWidth
-            disabled={event.status === "CANCELLED" || loading}
-            onClick={() => setAddArtistDialogOpen(true)}
-          >
-            Add Artists
-          </Button>
+            <span>
+              <Button
+                variant="contained"
+                fullWidth
+                disabled={["CANCELLED", "COMPLETED"].includes(event.status) || loading}
+                onClick={() => setEditDialogOpen(true)}
+              >
+                Edit Event Details
+              </Button>
+            </span>
+          </Tooltip>
           
           {event.status !== "CANCELLED" && (
             <Button
@@ -302,16 +260,16 @@ export default function EventActionButtons({ event, canManage }: Props) {
             <TextField
               label="Duration (hours)"
               type="number"
-              value={editForm.hours}
-              onChange={(e) => setEditForm({ ...editForm, hours: e.target.value })}
+              value={editForm.totalHours}
+              onChange={(e) => setEditForm({ ...editForm, totalHours: e.target.value })}
               fullWidth
             />
             
             <TextField
               label="Budget (₡)"
               type="number"
-              value={editForm.budget}
-              onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
+              value={editForm.totalBudget}
+              onChange={(e) => setEditForm({ ...editForm, totalBudget: e.target.value })}
               fullWidth
             />
             
@@ -340,62 +298,7 @@ export default function EventActionButtons({ event, canManage }: Props) {
         </DialogActions>
       </Dialog>
 
-      {/* Add Artist Dialog */}
-      <Dialog 
-        open={addArtistDialogOpen} 
-        onClose={() => setAddArtistDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add Artist to Event</DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ pt: 1 }}>
-            <TextField
-              label="Search Artists"
-              value={addArtistForm.searchTerm}
-              onChange={(e) => {
-                setAddArtistForm({ ...addArtistForm, searchTerm: e.target.value });
-                searchArtists(e.target.value);
-              }}
-              placeholder="Type artist name..."
-              fullWidth
-            />
-            
-            {availableArtists.length > 0 && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                  Available Artists:
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap">
-                  {availableArtists.map((artist) => (
-                    <Chip
-                      key={artist.id}
-                      label={artist.name}
-                      onClick={() => setAddArtistForm({ 
-                        ...addArtistForm, 
-                        artistId: artist.id,
-                        searchTerm: artist.name 
-                      })}
-                      color={addArtistForm.artistId === artist.id ? "primary" : "default"}
-                      variant={addArtistForm.artistId === artist.id ? "filled" : "outlined"}
-                    />
-                  ))}
-                </Stack>
-              </Box>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddArtistDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddArtist} 
-            variant="contained"
-            disabled={loading || !addArtistForm.artistId}
-          >
-            {loading ? "Adding..." : "Add Artist"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+
 
       {/* Cancel Event Dialog */}
       <Dialog 
@@ -408,7 +311,7 @@ export default function EventActionButtons({ event, canManage }: Props) {
         <DialogContent>
           <Typography>
             Are you sure you want to cancel this event? This action cannot be undone.
-            All pending booking requests will be cancelled.
+            All pending performance invitations will be cancelled.
           </Typography>
         </DialogContent>
         <DialogActions>

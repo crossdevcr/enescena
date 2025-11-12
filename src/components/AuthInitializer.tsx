@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
  * Should be included in the root layout
  */
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
-  const { checkAuth, isLoading } = useAuthStore();
+  const { checkAuth } = useAuthStore();
 
   useEffect(() => {
     // Check auth status on app startup

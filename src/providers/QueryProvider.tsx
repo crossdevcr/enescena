@@ -15,10 +15,13 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
             // Cache time: 10 minutes  
             gcTime: 10 * 60 * 1000,
             // Retry on failure
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error: unknown) => {
               // Don't retry on 4xx errors except 408, 429
-              if (error?.status >= 400 && error?.status < 500 && ![408, 429].includes(error.status)) {
-                return false;
+              if (typeof error === 'object' && error !== null && 'status' in error) {
+                const status = (error as { status?: number }).status;
+                if (status && status >= 400 && status < 500 && ![408, 429].includes(status)) {
+                  return false;
+                }
               }
               return failureCount < 3;
             },

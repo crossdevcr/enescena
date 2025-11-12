@@ -7,9 +7,7 @@ export async function GET(req: Request) {
   const returnTo = url.searchParams.get("returnTo") || `${cognito.appUrl}/dashboard`;
 
   // Read refresh token from request cookies (available to route handlers)
-  const refreshToken = (url as any).cookies?.get?.("refresh_token")?.value; // not reliable
-  // More reliable: re-read from headers via NextResponse trick
-  // Simpler: ask the client to call POST; BUT we want GET + redirect UX.
+  // Note: URL object doesn't have cookies property, so we read from headers instead
   // We'll fetch it via Request headers cookie string:
   const cookieHeader = req.headers.get("cookie") || "";
   const match = cookieHeader.match(/(?:^|;\s*)refresh_token=([^;]+)/);

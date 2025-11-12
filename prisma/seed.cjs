@@ -35,8 +35,7 @@ async function ensureUniqueEventSlug(base) {
 
 async function main() {
   // Dev reset (order matters due to FKs)
-  await prisma.eventArtist.deleteMany();
-  await prisma.booking.deleteMany();
+  await prisma.performance.deleteMany();
   await prisma.event.deleteMany();
   await prisma.artistUnavailability.deleteMany();
   await prisma.artist.deleteMany();
@@ -128,12 +127,13 @@ async function main() {
         description: "An evening of blues and rock music featuring multiple talented artists.",
         eventDate: new Date("2025-12-15T20:00:00"),
         endDate: new Date("2025-12-15T23:00:00"),
-        hours: 3,
-        budget: 75000,
+        totalHours: 3,
+        totalBudget: 75000,
         status: "PUBLISHED",
-        artists: [
-          { artistId: artists[0].id, fee: 30000, hours: 1.5, confirmed: true },
-          { artistId: artists[1].id, fee: 25000, hours: 1.5, confirmed: false },
+        createdBy: venueUser.id, // Venue creates this event
+        performances: [
+          { artistId: artists[0].id, agreedFee: 30000, hours: 1.5, status: "CONFIRMED" },
+          { artistId: artists[1].id, proposedFee: 25000, hours: 1.5, status: "PENDING" },
         ],
       },
       {
@@ -141,11 +141,27 @@ async function main() {
         description: "Welcome 2026 with amazing live music and entertainment.",
         eventDate: new Date("2025-12-31T21:00:00"),
         endDate: new Date("2026-01-01T02:00:00"),
-        hours: 5,
-        budget: 120000,
-        status: "DRAFT",
-        artists: [
-          { artistId: artists[0].id, fee: 40000, hours: 2, confirmed: false },
+        totalHours: 5,
+        totalBudget: 120000,
+        status: "SEEKING_ARTISTS",
+        createdBy: venueUser.id,
+        performances: [
+          { artistId: artists[0].id, proposedFee: 40000, hours: 2, status: "PENDING" },
+        ],
+      },
+      {
+        title: "Acoustic Coffee Session",
+        description: "Intimate acoustic performance at a cozy coffee shop.",
+        eventDate: new Date("2025-11-25T15:00:00"),
+        totalHours: 2,
+        status: "CONFIRMED",
+        createdBy: artists[0].userId, // Artist creates this event
+        // External venue (not in system)
+        externalVenueName: "Blue Moon Coffee",
+        externalVenueAddress: "123 Coffee St, San José",
+        externalVenueCity: "San José, CR",
+        performances: [
+          { artistId: artists[0].id, agreedFee: 15000, hours: 2, status: "CONFIRMED" },
         ],
       },
     ];
@@ -155,66 +171,38 @@ async function main() {
       
       const event = await prisma.event.create({
         data: {
-          venueId: venue.id,
+          createdBy: eventData.createdBy,
+          venueId: eventData.externalVenueName ? null : venue.id, // Only link if internal venue
+          externalVenueName: eventData.externalVenueName,
+          externalVenueAddress: eventData.externalVenueAddress,
+          externalVenueCity: eventData.externalVenueCity,
           title: eventData.title,
           slug: eventSlug,
           description: eventData.description,
           eventDate: eventData.eventDate,
           endDate: eventData.endDate,
-          hours: eventData.hours,
-          budget: eventData.budget,
+          totalHours: eventData.totalHours,
+          totalBudget: eventData.totalBudget,
           status: eventData.status,
         },
       });
 
-      // Create EventArtist relationships
-      for (const eventArtist of eventData.artists) {
-        await prisma.eventArtist.create({
+      // Create Performance relationships (replaces EventArtist)
+      for (const performanceData of eventData.performances) {
+        await prisma.performance.create({
           data: {
             eventId: event.id,
-            artistId: eventArtist.artistId,
-            fee: eventArtist.fee,
-            hours: eventArtist.hours,
-            confirmed: eventArtist.confirmed,
+            artistId: performanceData.artistId,
+            agreedFee: performanceData.agreedFee,
+            proposedFee: performanceData.proposedFee,
+            hours: performanceData.hours,
+            status: performanceData.status,
+            notes: `Performance for ${eventData.title}`,
           },
         });
       }
-
-      // Create some sample bookings linked to events
-      if (eventData.status === "PUBLISHED") {
-        for (const eventArtist of eventData.artists) {
-          if (eventArtist.confirmed) {
-            await prisma.booking.create({
-              data: {
-                artistId: eventArtist.artistId,
-                venueId: venue.id,
-                eventId: event.id,
-                eventDate: eventData.eventDate,
-                hours: eventArtist.hours,
-                status: "ACCEPTED",
-                note: `Booking for ${eventData.title}`,
-              },
-            });
-          }
-        }
-      }
     }
-    console.log("✅ Seeded events and event bookings");
-
-    // Create some individual bookings (not linked to events)
-    if (artists.length > 0) {
-      await prisma.booking.create({
-        data: {
-          artistId: artists[0].id,
-          venueId: venue.id,
-          eventDate: new Date("2025-11-20T19:00:00"),
-          hours: 2,
-          status: "PENDING",
-          note: "Individual booking request for private event",
-        },
-      });
-      console.log("✅ Seeded individual bookings");
-    }
+    console.log("✅ Seeded events and performances");
   }
 }
 
