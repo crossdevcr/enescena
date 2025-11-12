@@ -1,4 +1,5 @@
-import { PrismaClient, NotificationType } from "@prisma/client";
+import { NotificationType, PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/mailer";
 import {
   performanceInvitationForArtist,
