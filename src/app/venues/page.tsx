@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth/currentUser";
 import { 
   Avatar,
   Box, 
+  Button,
   Card,
   CardActionArea,
   CardContent,
@@ -9,21 +11,25 @@ import {
   Stack, 
   Typography 
 } from "@mui/material";
+import { Dashboard as DashboardIcon } from "@mui/icons-material";
 import Link from "next/link";
 
 export default async function VenuesPage() {
-  const venues = await prisma.venue.findMany({
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      city: true,
-      address: true,
-      about: true,
-      imageUrl: true,
-    },
-    orderBy: { name: "asc" },
-  });
+  const [venues, user] = await Promise.all([
+    prisma.venue.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        address: true,
+        about: true,
+        imageUrl: true,
+      },
+      orderBy: { name: "asc" },
+    }),
+    getCurrentUser()
+  ]);
 
   return (
     <Box sx={{ 
@@ -33,6 +39,25 @@ export default async function VenuesPage() {
     }}>
       <Container sx={{ py: 6 }}>
         <Stack spacing={4}>
+          {/* Back to Dashboard button for authenticated users */}
+          {user && (
+            <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+              <Button 
+                component={Link} 
+                href="/dashboard" 
+                variant="outlined" 
+                startIcon={<DashboardIcon />}
+                size="small"
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 500
+                }}
+              >
+                Back to Dashboard
+              </Button>
+            </Box>
+          )}
+          
           <Stack spacing={1} alignItems="center">
             <Typography variant="h3" fontWeight={700} textAlign="center">
               Venues
