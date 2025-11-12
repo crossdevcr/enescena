@@ -9,7 +9,13 @@
     "lint": "next lint",
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "deploy": "vercel --prod",
+    "deploy:staging": "vercel",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "node prisma/seed.cjs",
+    "postbuild": "prisma generate"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.925.0",
