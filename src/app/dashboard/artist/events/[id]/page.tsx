@@ -79,32 +79,39 @@ export default async function ArtistEventDetailsPage({
   const event = performance.event;
 
   return (
-    <Container maxWidth="md">
-      <Stack spacing={3}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Button 
-            component={Link} 
-            href="/dashboard/artist/events?tab=invitations" 
-            size="small"
-          >
-            ← Back to Events
-          </Button>
-        </Box>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      backgroundColor: "grey.50", 
+      py: 4 
+    }}>
+      <Container sx={{ py: 6, maxWidth: 1200 }}>
+        <Stack spacing={3}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button 
+              component={Link} 
+              href="/dashboard/artist/events?tab=invitations" 
+              variant="outlined"
+              size="small"
+            >
+              ← Back to Events
+            </Button>
+          </Stack>
+
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Stack>
+              <Typography variant="h4" fontWeight={700}>
+                {event?.title || "Event"}
+              </Typography>
+              <Typography color="text.secondary">
+                Performance Invitation
+              </Typography>
+            </Stack>
+            {statusChip(performance.status)}
+          </Stack>
 
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <Box>
-                  <Typography variant="h5" component="h1" gutterBottom>
-                    {event?.title || "Event"}
-                  </Typography>
-                  <Typography variant="subtitle1" color="text.secondary">
-                    Performance Invitation
-                  </Typography>
-                </Box>
-                {statusChip(performance.status)}
-              </Box>
 
               <Divider />
 
@@ -217,5 +224,6 @@ export default async function ArtistEventDetailsPage({
         </Card>
       </Stack>
     </Container>
+    </Box>
   );
 }
